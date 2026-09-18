@@ -1,0 +1,57 @@
+package com.naturaltaste.recommend.presentation.restaurant;
+
+import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantResponse;
+import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantUseCase;
+import com.naturaltaste.recommend.application.usecase.restaurant.SaveRestaurantRequest;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+@Validated
+@RestController
+@RequiredArgsConstructor
+public class RestaurantController {
+
+    private final RestaurantUseCase restaurantUseCase;
+
+    @GetMapping("/restaurants/search")
+    public List<RestaurantResponse> search(@RequestParam @NotBlank String query) {
+        return restaurantUseCase.search(query);
+    }
+
+    @PostMapping("/restaurants/saved")
+    @ResponseStatus(HttpStatus.CREATED)
+    public RestaurantResponse save(
+            Authentication authentication,
+            @Valid @RequestBody SaveRestaurantRequest request
+    ) {
+        return restaurantUseCase.save(currentUserId(authentication), request);
+    }
+
+    @DeleteMapping("/restaurants/saved/{restaurantId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cancelSave(Authentication authentication, @PathVariable Long restaurantId) {
+        restaurantUseCase.cancelSave(currentUserId(authentication), restaurantId);
+    }
+
+    @GetMapping("/restaurants/saved")
+    public List<RestaurantResponse> findSavedRestaurants(Authentication authentication) {
+        return restaurantUseCase.findSavedRestaurants(currentUserId(authentication));
+    }
+
+    private Long currentUserId(Authentication authentication) {
+        return Long.valueOf(authentication.getName());
+    }
+}
