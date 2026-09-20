@@ -15,53 +15,34 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "community_posts")
+@Table(name = "community_comments")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class CommunityPost {
+public class CommunityComment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "post_id", nullable = false)
+    private Long postId;
+
     @Column(name = "author_id", nullable = false)
     private Long authorId;
 
-    @Column(name = "restaurant_id", nullable = false)
-    private Long restaurantId;
-
-    @Column(nullable = false, length = 120)
-    private String title;
-
-    @Column(nullable = false, length = 2000)
+    @Column(nullable = false, length = 1000)
     private String content;
-
-    @Column(name = "image_url")
-    private String imageUrl;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
-    public static CommunityPost create(
-            Long authorId,
-            Long restaurantId,
-            String title,
-            String content,
-            String imageUrl
-    ) {
-        LocalDateTime now = LocalDateTime.now();
-        return CommunityPost.builder()
+    public static CommunityComment create(Long postId, Long authorId, String content) {
+        return CommunityComment.builder()
+                .postId(postId)
                 .authorId(authorId)
-                .restaurantId(restaurantId)
-                .title(title)
                 .content(content)
-                .imageUrl(imageUrl)
-                .createdAt(now)
-                .updatedAt(now)
+                .createdAt(LocalDateTime.now())
                 .build();
     }
 }

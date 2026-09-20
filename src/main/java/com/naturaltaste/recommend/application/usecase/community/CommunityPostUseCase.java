@@ -7,9 +7,15 @@ public interface CommunityPostUseCase {
 
     CommunityPostResponse create(Long authorId, CreateCommunityPostRequest request);
 
-    List<CommunityPostResponse> findAll();
+    List<CommunityPostResponse> findAll(Long userId);
 
-    CommunityPostResponse findById(Long postId);
+    CommunityPostResponse findById(Long userId, Long postId);
 
     RestaurantResponse saveRestaurant(Long userId, Long postId);
+
+    CommunityPostResponse toggleRecommendation(Long userId, Long postId);
+
+    CommunityCommentResponse createComment(Long userId, Long postId, CreateCommunityCommentRequest request);
+
+    List<CommunityCommentResponse> findComments(Long postId);
 }

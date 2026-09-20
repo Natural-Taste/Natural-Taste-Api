@@ -10,18 +10,32 @@ public record CommunityPostResponse(
         Long authorId,
         String title,
         String content,
+        String imageUrl,
         RestaurantResponse restaurant,
+        long commentCount,
+        long recommendationCount,
+        boolean recommended,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
 
-    public static CommunityPostResponse from(CommunityPost post, Restaurant restaurant) {
+    public static CommunityPostResponse from(
+            CommunityPost post,
+            Restaurant restaurant,
+            long commentCount,
+            long recommendationCount,
+            boolean recommended
+    ) {
         return new CommunityPostResponse(
                 post.getId(),
                 post.getAuthorId(),
                 post.getTitle(),
                 post.getContent(),
+                post.getImageUrl(),
                 RestaurantResponse.from(restaurant),
+                commentCount,
+                recommendationCount,
+                recommended,
                 post.getCreatedAt(),
                 post.getUpdatedAt()
         );

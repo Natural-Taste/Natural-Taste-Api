@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 public record CreateCommunityPostRequest(
         @NotBlank String title,
         @NotBlank String content,
+        String imageUrl,
         @Valid @NotNull SaveRestaurantRequest restaurant
 ) {
 }

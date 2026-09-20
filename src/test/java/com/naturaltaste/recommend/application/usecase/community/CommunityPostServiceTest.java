@@ -7,8 +7,12 @@ import static org.mockito.Mockito.verify;
 import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantResponse;
 import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantUseCase;
 import com.naturaltaste.recommend.application.usecase.restaurant.SaveRestaurantRequest;
+import com.naturaltaste.recommend.domain.community.CommunityComment;
+import com.naturaltaste.recommend.domain.community.CommunityCommentRepository;
 import com.naturaltaste.recommend.domain.community.CommunityPost;
 import com.naturaltaste.recommend.domain.community.CommunityPostRepository;
+import com.naturaltaste.recommend.domain.community.CommunityRecommendation;
+import com.naturaltaste.recommend.domain.community.CommunityRecommendationRepository;
 import com.naturaltaste.recommend.domain.restaurant.Restaurant;
 import com.naturaltaste.recommend.domain.restaurant.RestaurantRepository;
 import java.math.BigDecimal;
@@ -25,6 +29,12 @@ class CommunityPostServiceTest {
 
     @Mock
     private CommunityPostRepository communityPostRepository;
+
+    @Mock
+    private CommunityCommentRepository communityCommentRepository;
+
+    @Mock
+    private CommunityRecommendationRepository communityRecommendationRepository;
 
     @Mock
     private RestaurantRepository restaurantRepository;
@@ -45,6 +55,7 @@ class CommunityPostServiceTest {
                 .restaurantId(restaurant.getId())
                 .title(request.title())
                 .content(request.content())
+                .imageUrl(request.imageUrl())
                 .createdAt(java.time.LocalDateTime.now())
                 .updatedAt(java.time.LocalDateTime.now())
                 .build();
@@ -55,10 +66,12 @@ class CommunityPostServiceTest {
         CommunityPostResponse response = communityPostService.create(1L, request);
 
         assertThat(response.id()).isEqualTo(20L);
+        assertThat(response.imageUrl()).isEqualTo("https://example.com/sushi.jpg");
         assertThat(response.restaurant().id()).isEqualTo(10L);
         ArgumentCaptor<CommunityPost> captor = ArgumentCaptor.forClass(CommunityPost.class);
         verify(communityPostRepository).save(captor.capture());
         assertThat(captor.getValue().getRestaurantId()).isEqualTo(10L);
+        assertThat(captor.getValue().getImageUrl()).isEqualTo("https://example.com/sushi.jpg");
     }
 
     @Test
@@ -84,8 +97,67 @@ class CommunityPostServiceTest {
         verify(restaurantUseCase).save(org.mockito.ArgumentMatchers.eq(2L), org.mockito.ArgumentMatchers.any());
     }
 
+    @Test
+    void toggleRecommendationCreatesRecommendation() {
+        Restaurant restaurant = restaurant();
+        CommunityPost post = post(restaurant);
+        given(communityPostRepository.findById(20L)).willReturn(Optional.of(post));
+        given(restaurantRepository.findById(10L)).willReturn(Optional.of(restaurant));
+        given(communityRecommendationRepository.findByPostIdAndUserId(20L, 2L)).willReturn(Optional.empty());
+        given(communityRecommendationRepository.countByPostId(20L)).willReturn(1L);
+        given(communityRecommendationRepository.existsByPostIdAndUserId(20L, 2L)).willReturn(true);
+
+        CommunityPostResponse response = communityPostService.toggleRecommendation(2L, 20L);
+
+        assertThat(response.recommendationCount()).isEqualTo(1L);
+        assertThat(response.recommended()).isTrue();
+        verify(communityRecommendationRepository).save(org.mockito.ArgumentMatchers.any(CommunityRecommendation.class));
+    }
+
+    @Test
+    void createCommentSavesComment() {
+        Restaurant restaurant = restaurant();
+        CommunityPost post = post(restaurant);
+        CommunityComment comment = CommunityComment.builder()
+                .id(30L)
+                .postId(20L)
+                .authorId(2L)
+                .content("좋은 후기입니다")
+                .createdAt(java.time.LocalDateTime.now())
+                .build();
+        given(communityPostRepository.findById(20L)).willReturn(Optional.of(post));
+        given(communityCommentRepository.save(org.mockito.ArgumentMatchers.any(CommunityComment.class)))
+                .willReturn(comment);
+
+        CommunityCommentResponse response = communityPostService.createComment(
+                2L,
+                20L,
+                new CreateCommunityCommentRequest("좋은 후기입니다")
+        );
+
+        assertThat(response.content()).isEqualTo("좋은 후기입니다");
+        verify(communityCommentRepository).save(org.mockito.ArgumentMatchers.any(CommunityComment.class));
+    }
+
     private CreateCommunityPostRequest request() {
-        return new CreateCommunityPostRequest("추천", "맛있습니다", restaurantRequest());
+        return new CreateCommunityPostRequest(
+                "추천",
+                "맛있습니다",
+                "https://example.com/sushi.jpg",
+                restaurantRequest()
+        );
+    }
+
+    private CommunityPost post(Restaurant restaurant) {
+        return CommunityPost.builder()
+                .id(20L)
+                .authorId(1L)
+                .restaurantId(restaurant.getId())
+                .title("추천")
+                .content("맛있습니다")
+                .createdAt(java.time.LocalDateTime.now())
+                .updatedAt(java.time.LocalDateTime.now())
+                .build();
     }
 
     private SaveRestaurantRequest restaurantRequest() {

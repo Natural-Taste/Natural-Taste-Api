@@ -35,6 +35,7 @@ class CommunityPostControllerTest {
                                 {
                                   "title": "오늘의 초밥집",
                                   "content": "점심에 가기 좋았습니다.",
+                                  "imageUrl": "https://example.com/sushi.jpg",
                                   "restaurant": {
                                     "provider": "KAKAO",
                                     "providerPlaceId": "community-1",
@@ -50,6 +51,7 @@ class CommunityPostControllerTest {
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.title").value("오늘의 초밥집"))
+                .andExpect(jsonPath("$.imageUrl").value("https://example.com/sushi.jpg"))
                 .andExpect(jsonPath("$.restaurant.name").value("초밥집"))
                 .andReturn()
                 .getResponse()
@@ -64,7 +66,32 @@ class CommunityPostControllerTest {
         mockMvc.perform(get("/community/posts/{postId}", postId)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").value("점심에 가기 좋았습니다."));
+                .andExpect(jsonPath("$.content").value("점심에 가기 좋았습니다."))
+                .andExpect(jsonPath("$.commentCount").value(0))
+                .andExpect(jsonPath("$.recommendationCount").value(0))
+                .andExpect(jsonPath("$.recommended").value(false));
+
+        mockMvc.perform(post("/community/posts/{postId}/recommend", postId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recommendationCount").value(1))
+                .andExpect(jsonPath("$.recommended").value(true));
+
+        mockMvc.perform(post("/community/posts/{postId}/comments", postId)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "content": "저도 가보고 싶어요."
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.content").value("저도 가보고 싶어요."));
+
+        mockMvc.perform(get("/community/posts/{postId}/comments", postId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].content").value("저도 가보고 싶어요."));
 
         mockMvc.perform(post("/community/posts/{postId}/save", postId)
                         .header("Authorization", "Bearer " + accessToken))
