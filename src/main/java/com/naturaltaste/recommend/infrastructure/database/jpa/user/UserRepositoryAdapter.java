@@ -2,6 +2,7 @@ package com.naturaltaste.recommend.infrastructure.database.jpa.user;
 
 import com.naturaltaste.recommend.domain.user.User;
 import com.naturaltaste.recommend.domain.user.UserRepository;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -30,5 +31,10 @@ public class UserRepositoryAdapter implements UserRepository {
     @Override
     public Optional<User> findById(Long id) {
         return userJpaRepository.findById(id);
+    }
+
+    @Override
+    public List<User> searchActiveUsers(Long currentUserId, String keyword) {
+        return userJpaRepository.searchActiveUsers(currentUserId, keyword);
     }
 }

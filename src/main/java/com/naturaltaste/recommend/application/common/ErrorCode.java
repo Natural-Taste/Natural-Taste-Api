@@ -18,7 +18,11 @@ public enum ErrorCode {
     KAKAO_SEARCH_FAILED(HttpStatus.BAD_GATEWAY, "맛집 검색에 실패했습니다."),
     RESTAURANT_NOT_FOUND(HttpStatus.NOT_FOUND, "맛집을 찾을 수 없습니다."),
     SAVED_RESTAURANT_NOT_FOUND(HttpStatus.NOT_FOUND, "저장한 맛집을 찾을 수 없습니다."),
-    COMMUNITY_POST_NOT_FOUND(HttpStatus.NOT_FOUND, "커뮤니티 게시글을 찾을 수 없습니다.");
+    COMMUNITY_POST_NOT_FOUND(HttpStatus.NOT_FOUND, "커뮤니티 게시글을 찾을 수 없습니다."),
+    USER_SEARCH_KEYWORD_REQUIRED(HttpStatus.BAD_REQUEST, "검색어를 입력해 주세요."),
+    FRIEND_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "친구 요청을 찾을 수 없습니다."),
+    INVALID_FRIEND_REQUEST(HttpStatus.BAD_REQUEST, "친구 요청을 처리할 수 없습니다."),
+    FRIENDSHIP_REQUIRED(HttpStatus.FORBIDDEN, "친구가 아니면 조회할 수 없습니다.");
 
     private final HttpStatus status;
     private final String message;
