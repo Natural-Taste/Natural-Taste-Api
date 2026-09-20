@@ -1,0 +1,120 @@
+package com.naturaltaste.recommend.application.usecase.community;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+
+import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantResponse;
+import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantUseCase;
+import com.naturaltaste.recommend.application.usecase.restaurant.SaveRestaurantRequest;
+import com.naturaltaste.recommend.domain.community.CommunityPost;
+import com.naturaltaste.recommend.domain.community.CommunityPostRepository;
+import com.naturaltaste.recommend.domain.restaurant.Restaurant;
+import com.naturaltaste.recommend.domain.restaurant.RestaurantRepository;
+import java.math.BigDecimal;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class CommunityPostServiceTest {
+
+    @Mock
+    private CommunityPostRepository communityPostRepository;
+
+    @Mock
+    private RestaurantRepository restaurantRepository;
+
+    @Mock
+    private RestaurantUseCase restaurantUseCase;
+
+    @InjectMocks
+    private CommunityPostService communityPostService;
+
+    @Test
+    void createSavesRestaurantAndCommunityPost() {
+        CreateCommunityPostRequest request = request();
+        Restaurant restaurant = restaurant();
+        CommunityPost post = CommunityPost.builder()
+                .id(20L)
+                .authorId(1L)
+                .restaurantId(restaurant.getId())
+                .title(request.title())
+                .content(request.content())
+                .createdAt(java.time.LocalDateTime.now())
+                .updatedAt(java.time.LocalDateTime.now())
+                .build();
+        given(restaurantRepository.findByProviderAndProviderPlaceId("KAKAO", "1")).willReturn(Optional.empty());
+        given(restaurantRepository.save(org.mockito.ArgumentMatchers.any(Restaurant.class))).willReturn(restaurant);
+        given(communityPostRepository.save(org.mockito.ArgumentMatchers.any(CommunityPost.class))).willReturn(post);
+
+        CommunityPostResponse response = communityPostService.create(1L, request);
+
+        assertThat(response.id()).isEqualTo(20L);
+        assertThat(response.restaurant().id()).isEqualTo(10L);
+        ArgumentCaptor<CommunityPost> captor = ArgumentCaptor.forClass(CommunityPost.class);
+        verify(communityPostRepository).save(captor.capture());
+        assertThat(captor.getValue().getRestaurantId()).isEqualTo(10L);
+    }
+
+    @Test
+    void saveRestaurantUsesExistingRestaurantSaveFlow() {
+        Restaurant restaurant = restaurant();
+        CommunityPost post = CommunityPost.builder()
+                .id(20L)
+                .authorId(1L)
+                .restaurantId(restaurant.getId())
+                .title("추천")
+                .content("맛있습니다")
+                .createdAt(java.time.LocalDateTime.now())
+                .updatedAt(java.time.LocalDateTime.now())
+                .build();
+        given(communityPostRepository.findById(20L)).willReturn(Optional.of(post));
+        given(restaurantRepository.findById(10L)).willReturn(Optional.of(restaurant));
+        given(restaurantUseCase.save(org.mockito.ArgumentMatchers.eq(2L), org.mockito.ArgumentMatchers.any()))
+                .willReturn(RestaurantResponse.fromRestaurant(restaurant, true));
+
+        RestaurantResponse response = communityPostService.saveRestaurant(2L, 20L);
+
+        assertThat(response.saved()).isTrue();
+        verify(restaurantUseCase).save(org.mockito.ArgumentMatchers.eq(2L), org.mockito.ArgumentMatchers.any());
+    }
+
+    private CreateCommunityPostRequest request() {
+        return new CreateCommunityPostRequest("추천", "맛있습니다", restaurantRequest());
+    }
+
+    private SaveRestaurantRequest restaurantRequest() {
+        return new SaveRestaurantRequest(
+                "KAKAO",
+                "1",
+                "초밥집",
+                "서울시 강남구",
+                new BigDecimal("37.1234567"),
+                new BigDecimal("127.1234567"),
+                "음식점 > 일식",
+                "02-000-0000",
+                "https://place.map.kakao.com/1"
+        );
+    }
+
+    private Restaurant restaurant() {
+        SaveRestaurantRequest request = restaurantRequest();
+        return Restaurant.builder()
+                .id(10L)
+                .provider(request.provider())
+                .providerPlaceId(request.providerPlaceId())
+                .name(request.name())
+                .address(request.address())
+                .latitude(request.latitude())
+                .longitude(request.longitude())
+                .category(request.category())
+                .phone(request.phone())
+                .placeUrl(request.placeUrl())
+                .build();
+    }
+}

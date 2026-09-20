@@ -17,7 +17,8 @@ public enum ErrorCode {
     INVALID_RESTAURANT_SEARCH_KEYWORD(HttpStatus.BAD_REQUEST, "검색어를 입력해 주세요."),
     KAKAO_SEARCH_FAILED(HttpStatus.BAD_GATEWAY, "맛집 검색에 실패했습니다."),
     RESTAURANT_NOT_FOUND(HttpStatus.NOT_FOUND, "맛집을 찾을 수 없습니다."),
-    SAVED_RESTAURANT_NOT_FOUND(HttpStatus.NOT_FOUND, "저장한 맛집을 찾을 수 없습니다.");
+    SAVED_RESTAURANT_NOT_FOUND(HttpStatus.NOT_FOUND, "저장한 맛집을 찾을 수 없습니다."),
+    COMMUNITY_POST_NOT_FOUND(HttpStatus.NOT_FOUND, "커뮤니티 게시글을 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String message;
