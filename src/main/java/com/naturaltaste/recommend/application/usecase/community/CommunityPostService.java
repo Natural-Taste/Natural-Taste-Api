@@ -122,6 +122,27 @@ public class CommunityPostService implements CommunityPostUseCase {
                 .toList();
     }
 
+    @Override
+    @Transactional
+    public void delete(Long userId, Long postId) {
+        CommunityPost post = findPost(postId);
+        validateAuthor(userId, post.getAuthorId());
+        communityCommentRepository.deleteAllByPostId(postId);
+        communityRecommendationRepository.deleteAllByPostId(postId);
+        communityPostRepository.delete(post);
+    }
+
+    @Override
+    @Transactional
+    public void deleteComment(Long userId, Long postId, Long commentId) {
+        findPost(postId);
+        CommunityComment comment = communityCommentRepository.findById(commentId)
+                .filter(foundComment -> foundComment.getPostId().equals(postId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.COMMUNITY_COMMENT_NOT_FOUND));
+        validateAuthor(userId, comment.getAuthorId());
+        communityCommentRepository.delete(comment);
+    }
+
     private CommunityPost findPost(Long postId) {
         return communityPostRepository.findById(postId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.COMMUNITY_POST_NOT_FOUND));
@@ -140,6 +161,12 @@ public class CommunityPostService implements CommunityPostUseCase {
                 communityRecommendationRepository.countByPostId(post.getId()),
                 communityRecommendationRepository.existsByPostIdAndUserId(post.getId(), userId)
         );
+    }
+
+    private void validateAuthor(Long userId, Long authorId) {
+        if (!authorId.equals(userId)) {
+            throw new BusinessException(ErrorCode.COMMUNITY_AUTHOR_REQUIRED);
+        }
     }
 
     private Restaurant createRestaurant(SaveRestaurantRequest request) {

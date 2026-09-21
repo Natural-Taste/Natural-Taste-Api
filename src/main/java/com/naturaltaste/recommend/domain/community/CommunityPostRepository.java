@@ -10,4 +10,6 @@ public interface CommunityPostRepository {
     Optional<CommunityPost> findById(Long id);
 
     List<CommunityPost> findAll();
+
+    void delete(CommunityPost post);
 }

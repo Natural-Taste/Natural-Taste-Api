@@ -13,4 +13,6 @@ public interface CommunityRecommendationRepository {
     long countByPostId(Long postId);
 
     void delete(CommunityRecommendation recommendation);
+
+    void deleteAllByPostId(Long postId);
 }

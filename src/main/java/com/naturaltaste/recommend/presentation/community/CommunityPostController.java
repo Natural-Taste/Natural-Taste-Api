@@ -11,6 +11,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -67,6 +68,22 @@ public class CommunityPostController {
     @GetMapping("/community/posts/{postId}/comments")
     public List<CommunityCommentResponse> findComments(@PathVariable Long postId) {
         return communityPostUseCase.findComments(postId);
+    }
+
+    @DeleteMapping("/community/posts/{postId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(Authentication authentication, @PathVariable Long postId) {
+        communityPostUseCase.delete(currentUserId(authentication), postId);
+    }
+
+    @DeleteMapping("/community/posts/{postId}/comments/{commentId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteComment(
+            Authentication authentication,
+            @PathVariable Long postId,
+            @PathVariable Long commentId
+    ) {
+        communityPostUseCase.deleteComment(currentUserId(authentication), postId, commentId);
     }
 
     private Long currentUserId(Authentication authentication) {

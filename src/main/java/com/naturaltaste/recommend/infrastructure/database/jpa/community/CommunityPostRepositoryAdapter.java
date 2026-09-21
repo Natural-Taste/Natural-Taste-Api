@@ -27,4 +27,9 @@ public class CommunityPostRepositoryAdapter implements CommunityPostRepository {
     public List<CommunityPost> findAll() {
         return communityPostJpaRepository.findAllByOrderByCreatedAtDesc();
     }
+
+    @Override
+    public void delete(CommunityPost post) {
+        communityPostJpaRepository.delete(post);
+    }
 }

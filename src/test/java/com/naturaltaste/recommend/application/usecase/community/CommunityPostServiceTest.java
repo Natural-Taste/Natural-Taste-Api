@@ -1,9 +1,11 @@
 package com.naturaltaste.recommend.application.usecase.community;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.naturaltaste.recommend.application.common.BusinessException;
 import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantResponse;
 import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantUseCase;
 import com.naturaltaste.recommend.application.usecase.restaurant.SaveRestaurantRequest;
@@ -139,6 +141,54 @@ class CommunityPostServiceTest {
         verify(communityCommentRepository).save(org.mockito.ArgumentMatchers.any(CommunityComment.class));
     }
 
+    @Test
+    void deleteRemovesPostByAuthor() {
+        Restaurant restaurant = restaurant();
+        CommunityPost post = post(restaurant);
+        given(communityPostRepository.findById(20L)).willReturn(Optional.of(post));
+
+        communityPostService.delete(1L, 20L);
+
+        verify(communityCommentRepository).deleteAllByPostId(20L);
+        verify(communityRecommendationRepository).deleteAllByPostId(20L);
+        verify(communityPostRepository).delete(post);
+    }
+
+    @Test
+    void deleteRejectsNonAuthor() {
+        Restaurant restaurant = restaurant();
+        CommunityPost post = post(restaurant);
+        given(communityPostRepository.findById(20L)).willReturn(Optional.of(post));
+
+        assertThatThrownBy(() -> communityPostService.delete(2L, 20L))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void deleteCommentRemovesCommentByAuthor() {
+        Restaurant restaurant = restaurant();
+        CommunityPost post = post(restaurant);
+        CommunityComment comment = comment();
+        given(communityPostRepository.findById(20L)).willReturn(Optional.of(post));
+        given(communityCommentRepository.findById(30L)).willReturn(Optional.of(comment));
+
+        communityPostService.deleteComment(2L, 20L, 30L);
+
+        verify(communityCommentRepository).delete(comment);
+    }
+
+    @Test
+    void deleteCommentRejectsNonAuthor() {
+        Restaurant restaurant = restaurant();
+        CommunityPost post = post(restaurant);
+        CommunityComment comment = comment();
+        given(communityPostRepository.findById(20L)).willReturn(Optional.of(post));
+        given(communityCommentRepository.findById(30L)).willReturn(Optional.of(comment));
+
+        assertThatThrownBy(() -> communityPostService.deleteComment(1L, 20L, 30L))
+                .isInstanceOf(BusinessException.class);
+    }
+
     private CreateCommunityPostRequest request() {
         return new CreateCommunityPostRequest(
                 "추천",
@@ -157,6 +207,16 @@ class CommunityPostServiceTest {
                 .content("맛있습니다")
                 .createdAt(java.time.LocalDateTime.now())
                 .updatedAt(java.time.LocalDateTime.now())
+                .build();
+    }
+
+    private CommunityComment comment() {
+        return CommunityComment.builder()
+                .id(30L)
+                .postId(20L)
+                .authorId(2L)
+                .content("좋은 후기입니다")
+                .createdAt(java.time.LocalDateTime.now())
                 .build();
     }
 

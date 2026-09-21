@@ -11,4 +11,6 @@ public interface CommunityRecommendationJpaRepository extends JpaRepository<Comm
     boolean existsByPostIdAndUserId(Long postId, Long userId);
 
     long countByPostId(Long postId);
+
+    void deleteAllByPostId(Long postId);
 }

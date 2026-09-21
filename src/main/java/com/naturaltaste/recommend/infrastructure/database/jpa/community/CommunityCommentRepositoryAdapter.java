@@ -3,6 +3,7 @@ package com.naturaltaste.recommend.infrastructure.database.jpa.community;
 import com.naturaltaste.recommend.domain.community.CommunityComment;
 import com.naturaltaste.recommend.domain.community.CommunityCommentRepository;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -18,6 +19,11 @@ public class CommunityCommentRepositoryAdapter implements CommunityCommentReposi
     }
 
     @Override
+    public Optional<CommunityComment> findById(Long id) {
+        return communityCommentJpaRepository.findById(id);
+    }
+
+    @Override
     public List<CommunityComment> findAllByPostId(Long postId) {
         return communityCommentJpaRepository.findAllByPostIdOrderByCreatedAtAsc(postId);
     }
@@ -25,5 +31,15 @@ public class CommunityCommentRepositoryAdapter implements CommunityCommentReposi
     @Override
     public long countByPostId(Long postId) {
         return communityCommentJpaRepository.countByPostId(postId);
+    }
+
+    @Override
+    public void delete(CommunityComment comment) {
+        communityCommentJpaRepository.delete(comment);
+    }
+
+    @Override
+    public void deleteAllByPostId(Long postId) {
+        communityCommentJpaRepository.deleteAllByPostId(postId);
     }
 }

@@ -1,6 +1,7 @@
 package com.naturaltaste.recommend.presentation.community;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -97,6 +98,87 @@ class CommunityPostControllerTest {
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.saved").value(true));
+    }
+
+    @Test
+    void deletePostAllowsOnlyAuthor() throws Exception {
+        String authorToken = signupAndReadToken("community-delete-author@example.com");
+        String otherToken = signupAndReadToken("community-delete-other@example.com");
+        Long postId = createPostAndReadId(authorToken, "delete-post-1");
+
+        mockMvc.perform(delete("/community/posts/{postId}", postId)
+                        .header("Authorization", "Bearer " + otherToken))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(delete("/community/posts/{postId}", postId)
+                        .header("Authorization", "Bearer " + authorToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/community/posts/{postId}", postId)
+                        .header("Authorization", "Bearer " + authorToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteCommentAllowsOnlyAuthor() throws Exception {
+        String postAuthorToken = signupAndReadToken("community-comment-post-author@example.com");
+        String commentAuthorToken = signupAndReadToken("community-comment-author@example.com");
+        Long postId = createPostAndReadId(postAuthorToken, "delete-comment-1");
+        String commentResponse = mockMvc.perform(post("/community/posts/{postId}/comments", postId)
+                        .header("Authorization", "Bearer " + commentAuthorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "content": "삭제할 댓글입니다."
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        Long commentId = objectMapper.readTree(commentResponse).get("id").longValue();
+
+        mockMvc.perform(delete("/community/posts/{postId}/comments/{commentId}", postId, commentId)
+                        .header("Authorization", "Bearer " + postAuthorToken))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(delete("/community/posts/{postId}/comments/{commentId}", postId, commentId)
+                        .header("Authorization", "Bearer " + commentAuthorToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/community/posts/{postId}/comments", postId)
+                        .header("Authorization", "Bearer " + postAuthorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    private Long createPostAndReadId(String accessToken, String placeId) throws Exception {
+        String createResponse = mockMvc.perform(post("/community/posts")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "삭제 테스트",
+                                  "content": "삭제 권한 확인",
+                                  "imageUrl": "https://example.com/delete.jpg",
+                                  "restaurant": {
+                                    "provider": "KAKAO",
+                                    "providerPlaceId": "%s",
+                                    "name": "삭제 식당",
+                                    "address": "서울시 강남구",
+                                    "latitude": 37.1234567,
+                                    "longitude": 127.1234567,
+                                    "category": "음식점",
+                                    "phone": "02-000-0000",
+                                    "placeUrl": "https://place.map.kakao.com/%s"
+                                  }
+                                }
+                                """.formatted(placeId, placeId)))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        return objectMapper.readTree(createResponse).get("id").longValue();
     }
 
     private String signupAndReadToken(String email) throws Exception {

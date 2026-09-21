@@ -36,4 +36,9 @@ public class CommunityRecommendationRepositoryAdapter implements CommunityRecomm
     public void delete(CommunityRecommendation recommendation) {
         communityRecommendationJpaRepository.delete(recommendation);
     }
+
+    @Override
+    public void deleteAllByPostId(Long postId) {
+        communityRecommendationJpaRepository.deleteAllByPostId(postId);
+    }
 }

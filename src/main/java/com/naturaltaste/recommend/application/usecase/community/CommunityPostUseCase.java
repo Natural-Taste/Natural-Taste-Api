@@ -18,4 +18,8 @@ public interface CommunityPostUseCase {
     CommunityCommentResponse createComment(Long userId, Long postId, CreateCommunityCommentRequest request);
 
     List<CommunityCommentResponse> findComments(Long postId);
+
+    void delete(Long userId, Long postId);
+
+    void deleteComment(Long userId, Long postId, Long commentId);
 }

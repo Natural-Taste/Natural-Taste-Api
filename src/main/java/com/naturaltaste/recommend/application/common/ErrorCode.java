@@ -19,6 +19,8 @@ public enum ErrorCode {
     RESTAURANT_NOT_FOUND(HttpStatus.NOT_FOUND, "맛집을 찾을 수 없습니다."),
     SAVED_RESTAURANT_NOT_FOUND(HttpStatus.NOT_FOUND, "저장한 맛집을 찾을 수 없습니다."),
     COMMUNITY_POST_NOT_FOUND(HttpStatus.NOT_FOUND, "커뮤니티 게시글을 찾을 수 없습니다."),
+    COMMUNITY_COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "커뮤니티 댓글을 찾을 수 없습니다."),
+    COMMUNITY_AUTHOR_REQUIRED(HttpStatus.FORBIDDEN, "작성자만 삭제할 수 있습니다."),
     USER_SEARCH_KEYWORD_REQUIRED(HttpStatus.BAD_REQUEST, "검색어를 입력해 주세요."),
     FRIEND_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "친구 요청을 찾을 수 없습니다."),
     INVALID_FRIEND_REQUEST(HttpStatus.BAD_REQUEST, "친구 요청을 처리할 수 없습니다."),
