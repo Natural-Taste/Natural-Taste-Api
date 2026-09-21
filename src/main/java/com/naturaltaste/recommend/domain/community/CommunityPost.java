@@ -64,4 +64,11 @@ public class CommunityPost {
                 .updatedAt(now)
                 .build();
     }
+
+    public void update(String title, String content, String imageUrl) {
+        this.title = title;
+        this.content = content;
+        this.imageUrl = imageUrl;
+        this.updatedAt = LocalDateTime.now();
+    }
 }

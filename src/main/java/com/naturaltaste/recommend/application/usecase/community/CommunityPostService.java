@@ -66,6 +66,16 @@ public class CommunityPostService implements CommunityPostUseCase {
 
     @Override
     @Transactional
+    public CommunityPostResponse update(Long userId, Long postId, UpdateCommunityPostRequest request) {
+        CommunityPost post = findPost(postId);
+        validateAuthor(userId, post.getAuthorId());
+        post.update(request.title(), request.content(), request.imageUrl());
+
+        return toResponse(post, findRestaurant(post.getRestaurantId()), userId);
+    }
+
+    @Override
+    @Transactional
     public RestaurantResponse saveRestaurant(Long userId, Long postId) {
         CommunityPost post = findPost(postId);
         Restaurant restaurant = findRestaurant(post.getRestaurantId());
@@ -124,6 +134,22 @@ public class CommunityPostService implements CommunityPostUseCase {
 
     @Override
     @Transactional
+    public CommunityCommentResponse updateComment(
+            Long userId,
+            Long postId,
+            Long commentId,
+            UpdateCommunityCommentRequest request
+    ) {
+        findPost(postId);
+        CommunityComment comment = findCommentInPost(postId, commentId);
+        validateAuthor(userId, comment.getAuthorId());
+        comment.update(request.content());
+
+        return CommunityCommentResponse.from(comment);
+    }
+
+    @Override
+    @Transactional
     public void delete(Long userId, Long postId) {
         CommunityPost post = findPost(postId);
         validateAuthor(userId, post.getAuthorId());
@@ -136,9 +162,7 @@ public class CommunityPostService implements CommunityPostUseCase {
     @Transactional
     public void deleteComment(Long userId, Long postId, Long commentId) {
         findPost(postId);
-        CommunityComment comment = communityCommentRepository.findById(commentId)
-                .filter(foundComment -> foundComment.getPostId().equals(postId))
-                .orElseThrow(() -> new BusinessException(ErrorCode.COMMUNITY_COMMENT_NOT_FOUND));
+        CommunityComment comment = findCommentInPost(postId, commentId);
         validateAuthor(userId, comment.getAuthorId());
         communityCommentRepository.delete(comment);
     }
@@ -151,6 +175,12 @@ public class CommunityPostService implements CommunityPostUseCase {
     private Restaurant findRestaurant(Long restaurantId) {
         return restaurantRepository.findById(restaurantId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESTAURANT_NOT_FOUND));
+    }
+
+    private CommunityComment findCommentInPost(Long postId, Long commentId) {
+        return communityCommentRepository.findById(commentId)
+                .filter(foundComment -> foundComment.getPostId().equals(postId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.COMMUNITY_COMMENT_NOT_FOUND));
     }
 
     private CommunityPostResponse toResponse(CommunityPost post, Restaurant restaurant, Long userId) {

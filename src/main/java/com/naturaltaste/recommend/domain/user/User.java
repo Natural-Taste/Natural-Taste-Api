@@ -52,6 +52,10 @@ public class User {
         this.password = password;
     }
 
+    public void updateName(String name) {
+        this.name = name;
+    }
+
     public void delete() {
         this.deleted = true;
         this.deletedAt = LocalDateTime.now();

@@ -2,6 +2,7 @@ package com.naturaltaste.recommend.presentation.community;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -120,6 +121,47 @@ class CommunityPostControllerTest {
     }
 
     @Test
+    void updatePostAllowsOnlyAuthorAndReflectsInDetail() throws Exception {
+        String authorToken = signupAndReadToken("community-update-author@example.com");
+        String otherToken = signupAndReadToken("community-update-other@example.com");
+        Long postId = createPostAndReadId(authorToken, "update-post-1");
+
+        mockMvc.perform(patch("/community/posts/{postId}", postId)
+                        .header("Authorization", "Bearer " + otherToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "수정 실패",
+                                  "content": "작성자가 아닙니다.",
+                                  "imageUrl": "https://example.com/fail.jpg"
+                                }
+                                """))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(patch("/community/posts/{postId}", postId)
+                        .header("Authorization", "Bearer " + authorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "수정된 게시글",
+                                  "content": "내용도 수정되었습니다.",
+                                  "imageUrl": "https://example.com/updated.jpg"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("수정된 게시글"))
+                .andExpect(jsonPath("$.content").value("내용도 수정되었습니다."))
+                .andExpect(jsonPath("$.imageUrl").value("https://example.com/updated.jpg"));
+
+        mockMvc.perform(get("/community/posts/{postId}", postId)
+                        .header("Authorization", "Bearer " + authorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("수정된 게시글"))
+                .andExpect(jsonPath("$.content").value("내용도 수정되었습니다."))
+                .andExpect(jsonPath("$.imageUrl").value("https://example.com/updated.jpg"));
+    }
+
+    @Test
     void deleteCommentAllowsOnlyAuthor() throws Exception {
         String postAuthorToken = signupAndReadToken("community-comment-post-author@example.com");
         String commentAuthorToken = signupAndReadToken("community-comment-author@example.com");
@@ -150,6 +192,64 @@ class CommunityPostControllerTest {
                         .header("Authorization", "Bearer " + postAuthorToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void updateCommentAllowsOnlyAuthorAndKeepsOtherPostCommentNotFound() throws Exception {
+        String postAuthorToken = signupAndReadToken("community-comment-update-post-author@example.com");
+        String commentAuthorToken = signupAndReadToken("community-comment-update-author@example.com");
+        String otherToken = signupAndReadToken("community-comment-update-other@example.com");
+        Long postId = createPostAndReadId(postAuthorToken, "update-comment-1");
+        Long otherPostId = createPostAndReadId(postAuthorToken, "update-comment-2");
+        String commentResponse = mockMvc.perform(post("/community/posts/{postId}/comments", postId)
+                        .header("Authorization", "Bearer " + commentAuthorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "content": "수정 전 댓글입니다."
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        Long commentId = objectMapper.readTree(commentResponse).get("id").longValue();
+
+        mockMvc.perform(patch("/community/posts/{postId}/comments/{commentId}", postId, commentId)
+                        .header("Authorization", "Bearer " + otherToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "content": "수정 권한이 없습니다."
+                                }
+                                """))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(patch("/community/posts/{postId}/comments/{commentId}", otherPostId, commentId)
+                        .header("Authorization", "Bearer " + commentAuthorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "content": "다른 게시글 경로입니다."
+                                }
+                                """))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(patch("/community/posts/{postId}/comments/{commentId}", postId, commentId)
+                        .header("Authorization", "Bearer " + commentAuthorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "content": "수정된 댓글입니다."
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").value("수정된 댓글입니다."));
+
+        mockMvc.perform(get("/community/posts/{postId}/comments", postId)
+                        .header("Authorization", "Bearer " + postAuthorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].content").value("수정된 댓글입니다."));
     }
 
     private Long createPostAndReadId(String accessToken, String placeId) throws Exception {

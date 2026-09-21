@@ -117,6 +117,39 @@ class CommunityPostServiceTest {
     }
 
     @Test
+    void updatePostChangesPostByAuthor() {
+        Restaurant restaurant = restaurant();
+        CommunityPost post = post(restaurant);
+        given(communityPostRepository.findById(20L)).willReturn(Optional.of(post));
+        given(restaurantRepository.findById(10L)).willReturn(Optional.of(restaurant));
+
+        CommunityPostResponse response = communityPostService.update(
+                1L,
+                20L,
+                new UpdateCommunityPostRequest("수정 제목", "수정 내용", "https://example.com/updated.jpg")
+        );
+
+        assertThat(response.title()).isEqualTo("수정 제목");
+        assertThat(response.content()).isEqualTo("수정 내용");
+        assertThat(response.imageUrl()).isEqualTo("https://example.com/updated.jpg");
+        assertThat(post.getTitle()).isEqualTo("수정 제목");
+    }
+
+    @Test
+    void updatePostRejectsNonAuthor() {
+        Restaurant restaurant = restaurant();
+        CommunityPost post = post(restaurant);
+        given(communityPostRepository.findById(20L)).willReturn(Optional.of(post));
+
+        assertThatThrownBy(() -> communityPostService.update(
+                2L,
+                20L,
+                new UpdateCommunityPostRequest("수정 제목", "수정 내용", null)
+        ))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
     void createCommentSavesComment() {
         Restaurant restaurant = restaurant();
         CommunityPost post = post(restaurant);
@@ -139,6 +172,65 @@ class CommunityPostServiceTest {
 
         assertThat(response.content()).isEqualTo("좋은 후기입니다");
         verify(communityCommentRepository).save(org.mockito.ArgumentMatchers.any(CommunityComment.class));
+    }
+
+    @Test
+    void updateCommentChangesCommentByAuthor() {
+        Restaurant restaurant = restaurant();
+        CommunityPost post = post(restaurant);
+        CommunityComment comment = comment();
+        given(communityPostRepository.findById(20L)).willReturn(Optional.of(post));
+        given(communityCommentRepository.findById(30L)).willReturn(Optional.of(comment));
+
+        CommunityCommentResponse response = communityPostService.updateComment(
+                2L,
+                20L,
+                30L,
+                new UpdateCommunityCommentRequest("수정한 댓글입니다")
+        );
+
+        assertThat(response.content()).isEqualTo("수정한 댓글입니다");
+        assertThat(comment.getContent()).isEqualTo("수정한 댓글입니다");
+    }
+
+    @Test
+    void updateCommentRejectsNonAuthor() {
+        Restaurant restaurant = restaurant();
+        CommunityPost post = post(restaurant);
+        CommunityComment comment = comment();
+        given(communityPostRepository.findById(20L)).willReturn(Optional.of(post));
+        given(communityCommentRepository.findById(30L)).willReturn(Optional.of(comment));
+
+        assertThatThrownBy(() -> communityPostService.updateComment(
+                1L,
+                20L,
+                30L,
+                new UpdateCommunityCommentRequest("수정한 댓글입니다")
+        ))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void updateCommentFailsWhenCommentBelongsToOtherPost() {
+        Restaurant restaurant = restaurant();
+        CommunityPost post = post(restaurant);
+        CommunityComment comment = CommunityComment.builder()
+                .id(30L)
+                .postId(21L)
+                .authorId(2L)
+                .content("다른 게시글 댓글입니다")
+                .createdAt(java.time.LocalDateTime.now())
+                .build();
+        given(communityPostRepository.findById(20L)).willReturn(Optional.of(post));
+        given(communityCommentRepository.findById(30L)).willReturn(Optional.of(comment));
+
+        assertThatThrownBy(() -> communityPostService.updateComment(
+                2L,
+                20L,
+                30L,
+                new UpdateCommunityCommentRequest("수정한 댓글입니다")
+        ))
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.naturaltaste.recommend.application.usecase.auth;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -79,5 +80,22 @@ class AuthServiceTest {
         authService.changePassword(user.getId(), request);
 
         verify(passwordEncoder).encode(request.newPassword());
+    }
+
+    @Test
+    void updateUserChangesName() {
+        User user = User.builder()
+                .id(1L)
+                .email("user@example.com")
+                .password("encoded-password")
+                .name("사용자")
+                .deleted(false)
+                .build();
+        given(userRepository.findById(user.getId())).willReturn(Optional.of(user));
+
+        UserResponse response = authService.updateUser(user.getId(), new UpdateUserRequest("새 이름"));
+
+        assertThat(response.name()).isEqualTo("새 이름");
+        assertThat(user.getName()).isEqualTo("새 이름");
     }
 }

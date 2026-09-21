@@ -45,4 +45,8 @@ public class CommunityComment {
                 .createdAt(LocalDateTime.now())
                 .build();
     }
+
+    public void update(String content) {
+        this.content = content;
+    }
 }

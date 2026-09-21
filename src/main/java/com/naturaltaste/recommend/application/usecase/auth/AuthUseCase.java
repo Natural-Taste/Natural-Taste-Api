@@ -6,6 +6,10 @@ public interface AuthUseCase {
 
     AuthResponse login(LoginRequest request);
 
+    UserResponse getUser(Long userId);
+
+    UserResponse updateUser(Long userId, UpdateUserRequest request);
+
     void logout(Long userId);
 
     void deleteUser(Long userId, DeleteUserRequest request);

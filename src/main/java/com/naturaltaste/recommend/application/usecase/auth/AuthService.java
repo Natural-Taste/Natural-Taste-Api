@@ -50,6 +50,21 @@ public class AuthService implements AuthUseCase {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public UserResponse getUser(Long userId) {
+        return UserResponse.from(getActiveUser(userId));
+    }
+
+    @Override
+    @Transactional
+    public UserResponse updateUser(Long userId, UpdateUserRequest request) {
+        User user = getActiveUser(userId);
+        user.updateName(request.name());
+
+        return UserResponse.from(user);
+    }
+
+    @Override
     public void logout(Long userId) {
         getActiveUser(userId);
     }
