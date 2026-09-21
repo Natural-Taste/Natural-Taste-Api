@@ -91,6 +91,12 @@ class FriendControllerTest {
                         .header("Authorization", "Bearer " + user.accessToken()))
                 .andExpect(status().isNoContent());
 
+        mockMvc.perform(get("/users/search")
+                        .header("Authorization", "Bearer " + user.accessToken())
+                        .param("query", "친구"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].relationshipStatus").value("NONE"));
+
         mockMvc.perform(get("/friends/{friendId}/restaurants/saved", friend.userId())
                         .header("Authorization", "Bearer " + user.accessToken()))
                 .andExpect(status().isForbidden());
@@ -156,6 +162,12 @@ class FriendControllerTest {
                         .header("Authorization", "Bearer " + user.accessToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
+
+        mockMvc.perform(get("/users/search")
+                        .header("Authorization", "Bearer " + user.accessToken())
+                        .param("query", "sent-target@example.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].relationshipStatus").value("NONE"));
     }
 
     private AuthFixture signup(String email, String name) throws Exception {
