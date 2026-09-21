@@ -3,6 +3,7 @@ package com.naturaltaste.recommend.infrastructure.database.jpa.friend;
 import com.naturaltaste.recommend.domain.friend.FriendRequest;
 import com.naturaltaste.recommend.domain.friend.FriendRequestStatus;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -23,6 +24,17 @@ public interface FriendRequestJpaRepository extends JpaRepository<FriendRequest,
     );
 
     List<FriendRequest> findAllByReceiverIdAndStatusOrderByCreatedAtDesc(
+            Long receiverId,
+            FriendRequestStatus status
+    );
+
+    List<FriendRequest> findAllByRequesterIdAndStatusOrderByCreatedAtDesc(
+            Long requesterId,
+            FriendRequestStatus status
+    );
+
+    Optional<FriendRequest> findByRequesterIdAndReceiverIdAndStatus(
+            Long requesterId,
             Long receiverId,
             FriendRequestStatus status
     );

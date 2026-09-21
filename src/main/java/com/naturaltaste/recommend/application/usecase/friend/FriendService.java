@@ -34,7 +34,7 @@ public class FriendService implements FriendUseCase {
 
         getActiveUser(userId);
         return userRepository.searchActiveUsers(userId, query.trim()).stream()
-                .map(FriendUserResponse::from)
+                .map(user -> FriendUserResponse.from(user, findRelationshipStatus(userId, user.getId())))
                 .toList();
     }
 
@@ -55,7 +55,7 @@ public class FriendService implements FriendUseCase {
         FriendRequest savedRequest = friendRequestRepository.save(
                 FriendRequest.create(requester.getId(), receiver.getId())
         );
-        return FriendRequestResponse.from(savedRequest, requester);
+        return FriendRequestResponse.from(savedRequest, requester, receiver);
     }
 
     @Override
@@ -64,6 +64,19 @@ public class FriendService implements FriendUseCase {
         getActiveUser(userId);
         return friendRequestRepository.findReceivedPendingRequests(userId).stream()
                 .map(request -> FriendRequestResponse.from(request, getActiveUser(request.getRequesterId())))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FriendRequestResponse> findSentRequests(Long userId) {
+        User requester = getActiveUser(userId);
+        return friendRequestRepository.findSentPendingRequests(userId).stream()
+                .map(request -> FriendRequestResponse.from(
+                        request,
+                        requester,
+                        getActiveUser(request.getReceiverId())
+                ))
                 .toList();
     }
 
@@ -90,12 +103,37 @@ public class FriendService implements FriendUseCase {
     }
 
     @Override
+    @Transactional
+    public void cancelSentRequest(Long userId, Long requestId) {
+        getActiveUser(userId);
+        FriendRequest request = getPendingSentRequest(userId, requestId);
+        request.cancel();
+        friendRequestRepository.save(request);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<FriendUserResponse> findFriends(Long userId) {
         getActiveUser(userId);
         return friendshipRepository.findAllByUserId(userId).stream()
-                .map(friendship -> FriendUserResponse.from(getActiveUser(friendship.getFriendId())))
+                .map(friendship -> FriendUserResponse.from(
+                        getActiveUser(friendship.getFriendId()),
+                        FriendRelationshipStatus.FRIEND
+                ))
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public void deleteFriend(Long userId, Long friendId) {
+        getActiveUser(userId);
+        getActiveUser(friendId);
+        if (!friendshipRepository.existsByUserIdAndFriendId(userId, friendId)) {
+            throw new BusinessException(ErrorCode.FRIENDSHIP_REQUIRED);
+        }
+
+        friendshipRepository.deleteByUserIdAndFriendId(userId, friendId);
+        friendshipRepository.deleteByUserIdAndFriendId(friendId, userId);
     }
 
     @Override
@@ -118,6 +156,29 @@ public class FriendService implements FriendUseCase {
             throw new BusinessException(ErrorCode.INVALID_FRIEND_REQUEST);
         }
         return request;
+    }
+
+    private FriendRequest getPendingSentRequest(Long userId, Long requestId) {
+        FriendRequest request = friendRequestRepository.findById(requestId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.FRIEND_REQUEST_NOT_FOUND));
+        if (!request.getRequesterId().equals(userId)
+                || request.getStatus() != FriendRequestStatus.PENDING) {
+            throw new BusinessException(ErrorCode.INVALID_FRIEND_REQUEST);
+        }
+        return request;
+    }
+
+    private FriendRelationshipStatus findRelationshipStatus(Long userId, Long targetUserId) {
+        if (friendshipRepository.existsByUserIdAndFriendId(userId, targetUserId)) {
+            return FriendRelationshipStatus.FRIEND;
+        }
+        if (friendRequestRepository.findPendingByRequesterIdAndReceiverId(userId, targetUserId).isPresent()) {
+            return FriendRelationshipStatus.SENT_REQUEST;
+        }
+        if (friendRequestRepository.findPendingByRequesterIdAndReceiverId(targetUserId, userId).isPresent()) {
+            return FriendRelationshipStatus.RECEIVED_REQUEST;
+        }
+        return FriendRelationshipStatus.NONE;
     }
 
     private User getActiveUser(Long userId) {

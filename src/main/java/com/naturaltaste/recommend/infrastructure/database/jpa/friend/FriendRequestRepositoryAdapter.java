@@ -40,4 +40,21 @@ public class FriendRequestRepositoryAdapter implements FriendRequestRepository {
                 FriendRequestStatus.PENDING
         );
     }
+
+    @Override
+    public List<FriendRequest> findSentPendingRequests(Long requesterId) {
+        return friendRequestJpaRepository.findAllByRequesterIdAndStatusOrderByCreatedAtDesc(
+                requesterId,
+                FriendRequestStatus.PENDING
+        );
+    }
+
+    @Override
+    public Optional<FriendRequest> findPendingByRequesterIdAndReceiverId(Long requesterId, Long receiverId) {
+        return friendRequestJpaRepository.findByRequesterIdAndReceiverIdAndStatus(
+                requesterId,
+                receiverId,
+                FriendRequestStatus.PENDING
+        );
+    }
 }

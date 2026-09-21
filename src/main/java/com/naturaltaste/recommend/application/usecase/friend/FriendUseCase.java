@@ -11,11 +11,17 @@ public interface FriendUseCase {
 
     List<FriendRequestResponse> findReceivedRequests(Long userId);
 
+    List<FriendRequestResponse> findSentRequests(Long userId);
+
     FriendUserResponse acceptRequest(Long userId, Long requestId);
 
     void rejectRequest(Long userId, Long requestId);
 
+    void cancelSentRequest(Long userId, Long requestId);
+
     List<FriendUserResponse> findFriends(Long userId);
+
+    void deleteFriend(Long userId, Long friendId);
 
     List<RestaurantResponse> findFriendSavedRestaurants(Long userId, Long friendId);
 }

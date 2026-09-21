@@ -9,4 +9,6 @@ public interface FriendshipRepository {
     boolean existsByUserIdAndFriendId(Long userId, Long friendId);
 
     List<Friendship> findAllByUserId(Long userId);
+
+    void deleteByUserIdAndFriendId(Long userId, Long friendId);
 }

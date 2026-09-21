@@ -60,4 +60,9 @@ public class FriendRequest {
         this.status = FriendRequestStatus.REJECTED;
         this.respondedAt = LocalDateTime.now();
     }
+
+    public void cancel() {
+        this.status = FriendRequestStatus.CANCELED;
+        this.respondedAt = LocalDateTime.now();
+    }
 }

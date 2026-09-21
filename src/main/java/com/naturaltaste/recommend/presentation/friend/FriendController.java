@@ -50,6 +50,11 @@ public class FriendController {
         return friendUseCase.findReceivedRequests(currentUserId(authentication));
     }
 
+    @GetMapping("/friends/requests/sent")
+    public List<FriendRequestResponse> findSentRequests(Authentication authentication) {
+        return friendUseCase.findSentRequests(currentUserId(authentication));
+    }
+
     @PostMapping("/friends/requests/{requestId}/accept")
     public FriendUserResponse acceptRequest(
             Authentication authentication,
@@ -64,9 +69,21 @@ public class FriendController {
         friendUseCase.rejectRequest(currentUserId(authentication), requestId);
     }
 
+    @DeleteMapping("/friends/requests/sent/{requestId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cancelSentRequest(Authentication authentication, @PathVariable Long requestId) {
+        friendUseCase.cancelSentRequest(currentUserId(authentication), requestId);
+    }
+
     @GetMapping("/friends")
     public List<FriendUserResponse> findFriends(Authentication authentication) {
         return friendUseCase.findFriends(currentUserId(authentication));
+    }
+
+    @DeleteMapping("/friends/{friendId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteFriend(Authentication authentication, @PathVariable Long friendId) {
+        friendUseCase.deleteFriend(currentUserId(authentication), friendId);
     }
 
     @GetMapping("/friends/{friendId}/restaurants/saved")

@@ -34,7 +34,8 @@ class FriendControllerTest {
                         .header("Authorization", "Bearer " + user.accessToken())
                         .param("query", "친구"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(friend.userId()));
+                .andExpect(jsonPath("$[0].id").value(friend.userId()))
+                .andExpect(jsonPath("$[0].relationshipStatus").value("NONE"));
 
         String requestResponse = mockMvc.perform(post("/friends/requests")
                         .header("Authorization", "Bearer " + user.accessToken())
@@ -56,6 +57,18 @@ class FriendControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(requestId));
 
+        mockMvc.perform(get("/users/search")
+                        .header("Authorization", "Bearer " + user.accessToken())
+                        .param("query", "친구"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].relationshipStatus").value("SENT_REQUEST"));
+
+        mockMvc.perform(get("/users/search")
+                        .header("Authorization", "Bearer " + friend.accessToken())
+                        .param("query", "friend-user@example.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].relationshipStatus").value("RECEIVED_REQUEST"));
+
         mockMvc.perform(post("/friends/requests/{requestId}/accept", requestId)
                         .header("Authorization", "Bearer " + friend.accessToken()))
                 .andExpect(status().isOk())
@@ -64,7 +77,8 @@ class FriendControllerTest {
         mockMvc.perform(get("/friends")
                         .header("Authorization", "Bearer " + user.accessToken()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(friend.userId()));
+                .andExpect(jsonPath("$[0].id").value(friend.userId()))
+                .andExpect(jsonPath("$[0].relationshipStatus").value("FRIEND"));
 
         saveRestaurant(friend.accessToken());
 
@@ -72,6 +86,14 @@ class FriendControllerTest {
                         .header("Authorization", "Bearer " + user.accessToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("친구 초밥집"));
+
+        mockMvc.perform(delete("/friends/{friendId}", friend.userId())
+                        .header("Authorization", "Bearer " + user.accessToken()))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/friends/{friendId}/restaurants/saved", friend.userId())
+                        .header("Authorization", "Bearer " + user.accessToken()))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -98,6 +120,40 @@ class FriendControllerTest {
 
         mockMvc.perform(get("/friends/requests/received")
                         .header("Authorization", "Bearer " + friend.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void findAndCancelSentRequest() throws Exception {
+        AuthFixture user = signup("sent-user@example.com", "요청자");
+        AuthFixture friend = signup("sent-target@example.com", "수신자");
+        String requestResponse = mockMvc.perform(post("/friends/requests")
+                        .header("Authorization", "Bearer " + user.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "receiverId": %d
+                                }
+                                """.formatted(friend.userId())))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        Long requestId = objectMapper.readTree(requestResponse).get("id").longValue();
+
+        mockMvc.perform(get("/friends/requests/sent")
+                        .header("Authorization", "Bearer " + user.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(requestId))
+                .andExpect(jsonPath("$[0].receiver.id").value(friend.userId()));
+
+        mockMvc.perform(delete("/friends/requests/sent/{requestId}", requestId)
+                        .header("Authorization", "Bearer " + user.accessToken()))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/friends/requests/sent")
+                        .header("Authorization", "Bearer " + user.accessToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
     }

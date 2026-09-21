@@ -12,4 +12,8 @@ public interface FriendRequestRepository {
     boolean existsPendingBetween(Long requesterId, Long receiverId);
 
     List<FriendRequest> findReceivedPendingRequests(Long receiverId);
+
+    List<FriendRequest> findSentPendingRequests(Long requesterId);
+
+    Optional<FriendRequest> findPendingByRequesterIdAndReceiverId(Long requesterId, Long receiverId);
 }

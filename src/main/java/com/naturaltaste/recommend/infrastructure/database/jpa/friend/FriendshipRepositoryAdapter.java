@@ -26,4 +26,9 @@ public class FriendshipRepositoryAdapter implements FriendshipRepository {
     public List<Friendship> findAllByUserId(Long userId) {
         return friendshipJpaRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
     }
+
+    @Override
+    public void deleteByUserIdAndFriendId(Long userId, Long friendId) {
+        friendshipJpaRepository.deleteByUserIdAndFriendId(userId, friendId);
+    }
 }

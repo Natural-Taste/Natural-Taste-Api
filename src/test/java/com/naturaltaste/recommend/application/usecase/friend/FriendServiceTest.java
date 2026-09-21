@@ -11,6 +11,7 @@ import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantRespo
 import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantUseCase;
 import com.naturaltaste.recommend.domain.friend.FriendRequest;
 import com.naturaltaste.recommend.domain.friend.FriendRequestRepository;
+import com.naturaltaste.recommend.domain.friend.FriendRequestStatus;
 import com.naturaltaste.recommend.domain.friend.Friendship;
 import com.naturaltaste.recommend.domain.friend.FriendshipRepository;
 import com.naturaltaste.recommend.domain.restaurant.Restaurant;
@@ -50,11 +51,49 @@ class FriendServiceTest {
         User friend = user(2L, "friend@example.com", "친구");
         given(userRepository.findById(1L)).willReturn(Optional.of(me));
         given(userRepository.searchActiveUsers(1L, "친")).willReturn(List.of(friend));
+        given(friendshipRepository.existsByUserIdAndFriendId(1L, 2L)).willReturn(false);
+        given(friendRequestRepository.findPendingByRequesterIdAndReceiverId(1L, 2L))
+                .willReturn(Optional.empty());
+        given(friendRequestRepository.findPendingByRequesterIdAndReceiverId(2L, 1L))
+                .willReturn(Optional.empty());
 
         List<FriendUserResponse> responses = friendService.searchUsers(1L, "친");
 
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).id()).isEqualTo(2L);
+        assertThat(responses.get(0).relationshipStatus()).isEqualTo(FriendRelationshipStatus.NONE);
+    }
+
+    @Test
+    void searchUsersReturnsRelationshipStatus() {
+        User me = user(1L, "me@example.com", "나");
+        User friend = user(2L, "friend@example.com", "친구");
+        User sentTarget = user(3L, "sent@example.com", "보낸요청");
+        User receivedTarget = user(4L, "received@example.com", "받은요청");
+        FriendRequest sentRequest = FriendRequest.create(1L, 3L);
+        FriendRequest receivedRequest = FriendRequest.create(4L, 1L);
+        given(userRepository.findById(1L)).willReturn(Optional.of(me));
+        given(userRepository.searchActiveUsers(1L, "요청"))
+                .willReturn(List.of(friend, sentTarget, receivedTarget));
+        given(friendshipRepository.existsByUserIdAndFriendId(1L, 2L)).willReturn(true);
+        given(friendshipRepository.existsByUserIdAndFriendId(1L, 3L)).willReturn(false);
+        given(friendRequestRepository.findPendingByRequesterIdAndReceiverId(1L, 3L))
+                .willReturn(Optional.of(sentRequest));
+        given(friendshipRepository.existsByUserIdAndFriendId(1L, 4L)).willReturn(false);
+        given(friendRequestRepository.findPendingByRequesterIdAndReceiverId(1L, 4L))
+                .willReturn(Optional.empty());
+        given(friendRequestRepository.findPendingByRequesterIdAndReceiverId(4L, 1L))
+                .willReturn(Optional.of(receivedRequest));
+
+        List<FriendUserResponse> responses = friendService.searchUsers(1L, "요청");
+
+        assertThat(responses)
+                .extracting(FriendUserResponse::relationshipStatus)
+                .containsExactly(
+                        FriendRelationshipStatus.FRIEND,
+                        FriendRelationshipStatus.SENT_REQUEST,
+                        FriendRelationshipStatus.RECEIVED_REQUEST
+                );
     }
 
     @Test
@@ -79,6 +118,22 @@ class FriendServiceTest {
     }
 
     @Test
+    void findSentRequestsReturnsReceiver() {
+        User requester = user(1L, "me@example.com", "나");
+        User receiver = user(2L, "friend@example.com", "친구");
+        FriendRequest request = FriendRequest.create(1L, 2L);
+        given(userRepository.findById(1L)).willReturn(Optional.of(requester));
+        given(userRepository.findById(2L)).willReturn(Optional.of(receiver));
+        given(friendRequestRepository.findSentPendingRequests(1L)).willReturn(List.of(request));
+
+        List<FriendRequestResponse> responses = friendService.findSentRequests(1L);
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).requester().id()).isEqualTo(1L);
+        assertThat(responses.get(0).receiver().id()).isEqualTo(2L);
+    }
+
+    @Test
     void acceptRequestCreatesTwoFriendships() {
         User requester = user(1L, "me@example.com", "나");
         User receiver = user(2L, "friend@example.com", "친구");
@@ -100,6 +155,33 @@ class FriendServiceTest {
                         org.assertj.core.groups.Tuple.tuple(1L, 2L),
                         org.assertj.core.groups.Tuple.tuple(2L, 1L)
                 );
+    }
+
+    @Test
+    void cancelSentRequestChangesStatus() {
+        User requester = user(1L, "me@example.com", "나");
+        FriendRequest request = FriendRequest.create(1L, 2L);
+        given(userRepository.findById(1L)).willReturn(Optional.of(requester));
+        given(friendRequestRepository.findById(10L)).willReturn(Optional.of(request));
+
+        friendService.cancelSentRequest(1L, 10L);
+
+        assertThat(request.getStatus()).isEqualTo(FriendRequestStatus.CANCELED);
+        verify(friendRequestRepository).save(request);
+    }
+
+    @Test
+    void deleteFriendRemovesBothFriendships() {
+        User me = user(1L, "me@example.com", "나");
+        User friend = user(2L, "friend@example.com", "친구");
+        given(userRepository.findById(1L)).willReturn(Optional.of(me));
+        given(userRepository.findById(2L)).willReturn(Optional.of(friend));
+        given(friendshipRepository.existsByUserIdAndFriendId(1L, 2L)).willReturn(true);
+
+        friendService.deleteFriend(1L, 2L);
+
+        verify(friendshipRepository).deleteByUserIdAndFriendId(1L, 2L);
+        verify(friendshipRepository).deleteByUserIdAndFriendId(2L, 1L);
     }
 
     @Test
