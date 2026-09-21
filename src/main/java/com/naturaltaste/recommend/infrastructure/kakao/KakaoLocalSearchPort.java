@@ -29,7 +29,7 @@ public class KakaoLocalSearchPort implements RestaurantSearchPort {
     }
 
     @Override
-    public List<RestaurantSearchResult> search(String query) {
+    public List<RestaurantSearchResult> search(String query, BigDecimal longitude, BigDecimal latitude) {
         if (restApiKey.isBlank()) {
             return List.of();
         }
@@ -40,6 +40,8 @@ public class KakaoLocalSearchPort implements RestaurantSearchPort {
                             .path("/v2/local/search/keyword.json")
                             .queryParam("query", query)
                             .queryParam("category_group_code", "FD6")
+                            .queryParamIfPresent("x", java.util.Optional.ofNullable(longitude))
+                            .queryParamIfPresent("y", java.util.Optional.ofNullable(latitude))
                             .build())
                     .header("Authorization", "KakaoAK " + restApiKey)
                     .retrieve()

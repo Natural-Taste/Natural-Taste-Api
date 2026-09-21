@@ -32,7 +32,9 @@ class RestaurantControllerTest {
 
         mockMvc.perform(get("/restaurants/search")
                         .header("Authorization", "Bearer " + accessToken)
-                        .param("query", "초밥"))
+                        .param("query", "초밥")
+                        .param("x", "127.027")
+                        .param("y", "37.499"))
                 .andExpect(status().isOk());
 
         String saveResponse = mockMvc.perform(post("/restaurants/saved")

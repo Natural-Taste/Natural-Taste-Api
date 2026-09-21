@@ -35,7 +35,7 @@ class RestaurantServiceTest {
 
     @Test
     void searchReturnsRestaurantResponses() {
-        given(restaurantSearchPort.search("초밥")).willReturn(List.of(new RestaurantSearchResult(
+        given(restaurantSearchPort.search("초밥", null, null)).willReturn(List.of(new RestaurantSearchResult(
                 "KAKAO",
                 "1",
                 "초밥집",
@@ -47,10 +47,21 @@ class RestaurantServiceTest {
                 "https://place.map.kakao.com/1"
         )));
 
-        List<RestaurantResponse> responses = restaurantService.search("초밥");
+        List<RestaurantResponse> responses = restaurantService.search("초밥", null, null);
 
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).name()).isEqualTo("초밥집");
+    }
+
+    @Test
+    void searchUsesLocationWhenProvided() {
+        BigDecimal longitude = new BigDecimal("127.027");
+        BigDecimal latitude = new BigDecimal("37.499");
+        given(restaurantSearchPort.search("초밥", longitude, latitude)).willReturn(List.of());
+
+        restaurantService.search(" 초밥 ", longitude, latitude);
+
+        verify(restaurantSearchPort).search("초밥", longitude, latitude);
     }
 
     @Test

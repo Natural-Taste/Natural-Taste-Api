@@ -6,6 +6,7 @@ import com.naturaltaste.recommend.application.usecase.restaurant.SaveRestaurantR
 import com.naturaltaste.recommend.application.usecase.restaurant.UpdateSavedRestaurantMemoRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import java.math.BigDecimal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,8 +30,12 @@ public class RestaurantController {
     private final RestaurantUseCase restaurantUseCase;
 
     @GetMapping("/restaurants/search")
-    public List<RestaurantResponse> search(@RequestParam @NotBlank String query) {
-        return restaurantUseCase.search(query);
+    public List<RestaurantResponse> search(
+            @RequestParam @NotBlank String query,
+            @RequestParam(required = false) BigDecimal x,
+            @RequestParam(required = false) BigDecimal y
+    ) {
+        return restaurantUseCase.search(query, x, y);
     }
 
     @PostMapping("/restaurants/saved")

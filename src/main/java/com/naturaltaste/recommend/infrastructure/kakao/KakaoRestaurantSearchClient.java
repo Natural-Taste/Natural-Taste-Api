@@ -26,7 +26,7 @@ public class KakaoRestaurantSearchClient implements RestaurantSearchPort {
     }
 
     @Override
-    public List<RestaurantSearchResult> search(String query) {
+    public List<RestaurantSearchResult> search(String query, BigDecimal longitude, BigDecimal latitude) {
         if (restApiKey.isBlank()) {
             throw new BusinessException(ErrorCode.KAKAO_SEARCH_FAILED);
         }
@@ -37,6 +37,8 @@ public class KakaoRestaurantSearchClient implements RestaurantSearchPort {
                             .path("/v2/local/search/keyword.json")
                             .queryParam("query", query)
                             .queryParam("category_group_code", FOOD_CATEGORY_GROUP_CODE)
+                            .queryParamIfPresent("x", java.util.Optional.ofNullable(longitude))
+                            .queryParamIfPresent("y", java.util.Optional.ofNullable(latitude))
                             .build())
                     .header("Authorization", "KakaoAK " + restApiKey)
                     .retrieve()

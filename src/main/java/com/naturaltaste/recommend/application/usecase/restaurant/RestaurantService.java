@@ -7,6 +7,7 @@ import com.naturaltaste.recommend.domain.restaurant.Restaurant;
 import com.naturaltaste.recommend.domain.restaurant.RestaurantRepository;
 import com.naturaltaste.recommend.domain.restaurant.SavedRestaurant;
 import com.naturaltaste.recommend.domain.restaurant.SavedRestaurantRepository;
+import java.math.BigDecimal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,8 +23,12 @@ public class RestaurantService implements RestaurantUseCase {
 
     @Override
     @Transactional(readOnly = true)
-    public List<RestaurantResponse> search(String query) {
-        return restaurantSearchPort.search(query).stream()
+    public List<RestaurantResponse> search(String query, BigDecimal longitude, BigDecimal latitude) {
+        if (query == null || query.isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_RESTAURANT_SEARCH_KEYWORD);
+        }
+
+        return restaurantSearchPort.search(query.trim(), longitude, latitude).stream()
                 .map(RestaurantResponse::fromSearchResult)
                 .toList();
     }
