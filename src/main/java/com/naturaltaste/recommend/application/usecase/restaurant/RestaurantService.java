@@ -39,11 +39,11 @@ public class RestaurantService implements RestaurantUseCase {
                 .orElseGet(() -> createRestaurant(request));
         Restaurant savedRestaurant = restaurantRepository.save(restaurant);
 
-        if (!savedRestaurantRepository.existsByUserIdAndRestaurantId(userId, savedRestaurant.getId())) {
-            savedRestaurantRepository.save(SavedRestaurant.create(userId, savedRestaurant.getId()));
-        }
+        SavedRestaurant userSavedRestaurant = savedRestaurantRepository
+                .findByUserIdAndRestaurantId(userId, savedRestaurant.getId())
+                .orElseGet(() -> savedRestaurantRepository.save(SavedRestaurant.create(userId, savedRestaurant.getId())));
 
-        return RestaurantResponse.fromRestaurant(savedRestaurant, true);
+        return RestaurantResponse.fromSavedRestaurant(savedRestaurant, userSavedRestaurant);
     }
 
     @Override
@@ -60,10 +60,31 @@ public class RestaurantService implements RestaurantUseCase {
     @Transactional(readOnly = true)
     public List<RestaurantResponse> findSavedRestaurants(Long userId) {
         return savedRestaurantRepository.findAllByUserId(userId).stream()
-                .map(savedRestaurant -> restaurantRepository.findById(savedRestaurant.getRestaurantId())
-                        .orElseThrow(() -> new BusinessException(ErrorCode.RESTAURANT_NOT_FOUND)))
-                .map(restaurant -> RestaurantResponse.fromRestaurant(restaurant, true))
+                .map(savedRestaurant -> {
+                    Restaurant restaurant = restaurantRepository.findById(savedRestaurant.getRestaurantId())
+                            .orElseThrow(() -> new BusinessException(ErrorCode.RESTAURANT_NOT_FOUND));
+                    return RestaurantResponse.fromSavedRestaurant(restaurant, savedRestaurant);
+                })
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public RestaurantResponse updateSavedRestaurantMemo(
+            Long userId,
+            Long restaurantId,
+            UpdateSavedRestaurantMemoRequest request
+    ) {
+        SavedRestaurant savedRestaurant = savedRestaurantRepository
+                .findByUserIdAndRestaurantId(userId, restaurantId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESTAURANT_NOT_FOUND));
+        Restaurant restaurant = restaurantRepository.findById(restaurantId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESTAURANT_NOT_FOUND));
+
+        savedRestaurant.updateMemo(request.memo());
+        SavedRestaurant updatedSavedRestaurant = savedRestaurantRepository.save(savedRestaurant);
+
+        return RestaurantResponse.fromSavedRestaurant(restaurant, updatedSavedRestaurant);
     }
 
     private Restaurant createRestaurant(SaveRestaurantRequest request) {

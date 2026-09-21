@@ -2,6 +2,7 @@ package com.naturaltaste.recommend.presentation.restaurant;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -52,15 +53,30 @@ class RestaurantControllerTest {
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.saved").value(true))
+                .andExpect(jsonPath("$.memo").doesNotExist())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
         Long restaurantId = objectMapper.readTree(saveResponse).get("id").longValue();
 
+        mockMvc.perform(patch("/restaurants/saved/{restaurantId}/memo", restaurantId)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "memo": "다음에는 런치로"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(restaurantId))
+                .andExpect(jsonPath("$.saved").value(true))
+                .andExpect(jsonPath("$.memo").value("다음에는 런치로"));
+
         mockMvc.perform(get("/restaurants/saved")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(restaurantId));
+                .andExpect(jsonPath("$[0].id").value(restaurantId))
+                .andExpect(jsonPath("$[0].memo").value("다음에는 런치로"));
 
         mockMvc.perform(delete("/restaurants/saved/{restaurantId}", restaurantId)
                         .header("Authorization", "Bearer " + accessToken))

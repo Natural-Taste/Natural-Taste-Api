@@ -38,6 +38,9 @@ public class SavedRestaurant {
     @Column(name = "restaurant_id", nullable = false)
     private Long restaurantId;
 
+    @Column(name = "memo")
+    private String memo;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -47,5 +50,9 @@ public class SavedRestaurant {
                 .restaurantId(restaurantId)
                 .createdAt(LocalDateTime.now())
                 .build();
+    }
+
+    public void updateMemo(String memo) {
+        this.memo = memo;
     }
 }

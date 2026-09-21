@@ -11,4 +11,6 @@ public interface RestaurantUseCase {
     void cancelSave(Long userId, Long restaurantId);
 
     List<RestaurantResponse> findSavedRestaurants(Long userId);
+
+    RestaurantResponse updateSavedRestaurantMemo(Long userId, Long restaurantId, UpdateSavedRestaurantMemoRequest request);
 }

@@ -1,6 +1,7 @@
 package com.naturaltaste.recommend.application.usecase.restaurant;
 
 import com.naturaltaste.recommend.domain.restaurant.Restaurant;
+import com.naturaltaste.recommend.domain.restaurant.SavedRestaurant;
 import java.math.BigDecimal;
 
 public record RestaurantResponse(
@@ -14,7 +15,8 @@ public record RestaurantResponse(
         String category,
         String phone,
         String placeUrl,
-        boolean saved
+        boolean saved,
+        String memo
 ) {
 
     public static RestaurantResponse from(Restaurant restaurant) {
@@ -33,7 +35,25 @@ public record RestaurantResponse(
                 restaurant.getCategory(),
                 restaurant.getPhone(),
                 restaurant.getPlaceUrl(),
-                saved
+                saved,
+                null
+        );
+    }
+
+    public static RestaurantResponse fromSavedRestaurant(Restaurant restaurant, SavedRestaurant savedRestaurant) {
+        return new RestaurantResponse(
+                restaurant.getId(),
+                restaurant.getProvider(),
+                restaurant.getProviderPlaceId(),
+                restaurant.getName(),
+                restaurant.getAddress(),
+                restaurant.getLatitude(),
+                restaurant.getLongitude(),
+                restaurant.getCategory(),
+                restaurant.getPhone(),
+                restaurant.getPlaceUrl(),
+                true,
+                savedRestaurant.getMemo()
         );
     }
 
@@ -49,7 +69,8 @@ public record RestaurantResponse(
                 searchResult.category(),
                 searchResult.phone(),
                 searchResult.placeUrl(),
-                false
+                false,
+                null
         );
     }
 }
