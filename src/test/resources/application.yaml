@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    default: local
   datasource:
     url: jdbc:h2:mem:natural_taste_test;MODE=MySQL;DB_CLOSE_DELAY=-1
     driver-class-name: org.h2.Driver
@@ -14,3 +16,8 @@ jwt:
 
 kakao:
   rest-api-key:
+
+app:
+  image:
+    local:
+      upload-dir: ${java.io.tmpdir}/natural-taste-test-uploads
