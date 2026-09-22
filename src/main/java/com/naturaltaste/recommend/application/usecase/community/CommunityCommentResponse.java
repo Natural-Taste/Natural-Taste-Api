@@ -7,15 +7,17 @@ public record CommunityCommentResponse(
         Long id,
         Long postId,
         Long authorId,
+        String authorName,
         String content,
         LocalDateTime createdAt
 ) {
 
-    public static CommunityCommentResponse from(CommunityComment comment) {
+    public static CommunityCommentResponse from(CommunityComment comment, String authorName) {
         return new CommunityCommentResponse(
                 comment.getId(),
                 comment.getPostId(),
                 comment.getAuthorId(),
+                authorName,
                 comment.getContent(),
                 comment.getCreatedAt()
         );

@@ -13,6 +13,7 @@ import com.naturaltaste.recommend.domain.community.CommunityRecommendation;
 import com.naturaltaste.recommend.domain.community.CommunityRecommendationRepository;
 import com.naturaltaste.recommend.domain.restaurant.Restaurant;
 import com.naturaltaste.recommend.domain.restaurant.RestaurantRepository;
+import com.naturaltaste.recommend.domain.user.UserRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class CommunityPostService implements CommunityPostUseCase {
     private final CommunityCommentRepository communityCommentRepository;
     private final CommunityRecommendationRepository communityRecommendationRepository;
     private final RestaurantRepository restaurantRepository;
+    private final UserRepository userRepository;
     private final RestaurantUseCase restaurantUseCase;
 
     @Override
@@ -120,7 +122,7 @@ public class CommunityPostService implements CommunityPostUseCase {
                 request.content()
         ));
 
-        return CommunityCommentResponse.from(comment);
+        return CommunityCommentResponse.from(comment, findAuthorName(comment.getAuthorId()));
     }
 
     @Override
@@ -128,7 +130,7 @@ public class CommunityPostService implements CommunityPostUseCase {
     public List<CommunityCommentResponse> findComments(Long postId) {
         findPost(postId);
         return communityCommentRepository.findAllByPostId(postId).stream()
-                .map(CommunityCommentResponse::from)
+                .map(comment -> CommunityCommentResponse.from(comment, findAuthorName(comment.getAuthorId())))
                 .toList();
     }
 
@@ -145,7 +147,7 @@ public class CommunityPostService implements CommunityPostUseCase {
         validateAuthor(userId, comment.getAuthorId());
         comment.update(request.content());
 
-        return CommunityCommentResponse.from(comment);
+        return CommunityCommentResponse.from(comment, findAuthorName(comment.getAuthorId()));
     }
 
     @Override
@@ -186,11 +188,18 @@ public class CommunityPostService implements CommunityPostUseCase {
     private CommunityPostResponse toResponse(CommunityPost post, Restaurant restaurant, Long userId) {
         return CommunityPostResponse.from(
                 post,
+                findAuthorName(post.getAuthorId()),
                 restaurant,
                 communityCommentRepository.countByPostId(post.getId()),
                 communityRecommendationRepository.countByPostId(post.getId()),
                 communityRecommendationRepository.existsByPostIdAndUserId(post.getId(), userId)
         );
+    }
+
+    private String findAuthorName(Long authorId) {
+        return userRepository.findById(authorId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND))
+                .getName();
     }
 
     private void validateAuthor(Long userId, Long authorId) {

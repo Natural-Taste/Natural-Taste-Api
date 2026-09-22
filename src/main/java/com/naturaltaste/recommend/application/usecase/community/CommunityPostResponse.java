@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 public record CommunityPostResponse(
         Long id,
         Long authorId,
+        String authorName,
         String title,
         String content,
         String imageUrl,
@@ -21,6 +22,7 @@ public record CommunityPostResponse(
 
     public static CommunityPostResponse from(
             CommunityPost post,
+            String authorName,
             Restaurant restaurant,
             long commentCount,
             long recommendationCount,
@@ -29,6 +31,7 @@ public record CommunityPostResponse(
         return new CommunityPostResponse(
                 post.getId(),
                 post.getAuthorId(),
+                authorName,
                 post.getTitle(),
                 post.getContent(),
                 post.getImageUrl(),

@@ -17,7 +17,10 @@ import com.naturaltaste.recommend.domain.community.CommunityRecommendation;
 import com.naturaltaste.recommend.domain.community.CommunityRecommendationRepository;
 import com.naturaltaste.recommend.domain.restaurant.Restaurant;
 import com.naturaltaste.recommend.domain.restaurant.RestaurantRepository;
+import com.naturaltaste.recommend.domain.user.User;
+import com.naturaltaste.recommend.domain.user.UserRepository;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +45,9 @@ class CommunityPostServiceTest {
     private RestaurantRepository restaurantRepository;
 
     @Mock
+    private UserRepository userRepository;
+
+    @Mock
     private RestaurantUseCase restaurantUseCase;
 
     @InjectMocks
@@ -64,16 +70,45 @@ class CommunityPostServiceTest {
         given(restaurantRepository.findByProviderAndProviderPlaceId("KAKAO", "1")).willReturn(Optional.empty());
         given(restaurantRepository.save(org.mockito.ArgumentMatchers.any(Restaurant.class))).willReturn(restaurant);
         given(communityPostRepository.save(org.mockito.ArgumentMatchers.any(CommunityPost.class))).willReturn(post);
+        givenAuthorName(1L, "작성자");
 
         CommunityPostResponse response = communityPostService.create(1L, request);
 
         assertThat(response.id()).isEqualTo(20L);
+        assertThat(response.authorName()).isEqualTo("작성자");
         assertThat(response.imageUrl()).isEqualTo("https://example.com/sushi.jpg");
         assertThat(response.restaurant().id()).isEqualTo(10L);
         ArgumentCaptor<CommunityPost> captor = ArgumentCaptor.forClass(CommunityPost.class);
         verify(communityPostRepository).save(captor.capture());
         assertThat(captor.getValue().getRestaurantId()).isEqualTo(10L);
         assertThat(captor.getValue().getImageUrl()).isEqualTo("https://example.com/sushi.jpg");
+    }
+
+    @Test
+    void findAllReturnsPostAuthorName() {
+        Restaurant restaurant = restaurant();
+        CommunityPost post = post(restaurant);
+        given(communityPostRepository.findAll()).willReturn(List.of(post));
+        given(restaurantRepository.findById(10L)).willReturn(Optional.of(restaurant));
+        givenAuthorName(1L, "작성자");
+
+        List<CommunityPostResponse> responses = communityPostService.findAll(2L);
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).authorName()).isEqualTo("작성자");
+    }
+
+    @Test
+    void findByIdReturnsPostAuthorName() {
+        Restaurant restaurant = restaurant();
+        CommunityPost post = post(restaurant);
+        given(communityPostRepository.findById(20L)).willReturn(Optional.of(post));
+        given(restaurantRepository.findById(10L)).willReturn(Optional.of(restaurant));
+        givenAuthorName(1L, "작성자");
+
+        CommunityPostResponse response = communityPostService.findById(2L, 20L);
+
+        assertThat(response.authorName()).isEqualTo("작성자");
     }
 
     @Test
@@ -108,6 +143,7 @@ class CommunityPostServiceTest {
         given(communityRecommendationRepository.findByPostIdAndUserId(20L, 2L)).willReturn(Optional.empty());
         given(communityRecommendationRepository.countByPostId(20L)).willReturn(1L);
         given(communityRecommendationRepository.existsByPostIdAndUserId(20L, 2L)).willReturn(true);
+        givenAuthorName(1L, "작성자");
 
         CommunityPostResponse response = communityPostService.toggleRecommendation(2L, 20L);
 
@@ -122,6 +158,7 @@ class CommunityPostServiceTest {
         CommunityPost post = post(restaurant);
         given(communityPostRepository.findById(20L)).willReturn(Optional.of(post));
         given(restaurantRepository.findById(10L)).willReturn(Optional.of(restaurant));
+        givenAuthorName(1L, "작성자");
 
         CommunityPostResponse response = communityPostService.update(
                 1L,
@@ -130,6 +167,7 @@ class CommunityPostServiceTest {
         );
 
         assertThat(response.title()).isEqualTo("수정 제목");
+        assertThat(response.authorName()).isEqualTo("작성자");
         assertThat(response.content()).isEqualTo("수정 내용");
         assertThat(response.imageUrl()).isEqualTo("https://example.com/updated.jpg");
         assertThat(post.getTitle()).isEqualTo("수정 제목");
@@ -163,6 +201,7 @@ class CommunityPostServiceTest {
         given(communityPostRepository.findById(20L)).willReturn(Optional.of(post));
         given(communityCommentRepository.save(org.mockito.ArgumentMatchers.any(CommunityComment.class)))
                 .willReturn(comment);
+        givenAuthorName(2L, "댓글 작성자");
 
         CommunityCommentResponse response = communityPostService.createComment(
                 2L,
@@ -171,7 +210,23 @@ class CommunityPostServiceTest {
         );
 
         assertThat(response.content()).isEqualTo("좋은 후기입니다");
+        assertThat(response.authorName()).isEqualTo("댓글 작성자");
         verify(communityCommentRepository).save(org.mockito.ArgumentMatchers.any(CommunityComment.class));
+    }
+
+    @Test
+    void findCommentsReturnsCommentAuthorName() {
+        Restaurant restaurant = restaurant();
+        CommunityPost post = post(restaurant);
+        CommunityComment comment = comment();
+        given(communityPostRepository.findById(20L)).willReturn(Optional.of(post));
+        given(communityCommentRepository.findAllByPostId(20L)).willReturn(List.of(comment));
+        givenAuthorName(2L, "댓글 작성자");
+
+        List<CommunityCommentResponse> responses = communityPostService.findComments(20L);
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).authorName()).isEqualTo("댓글 작성자");
     }
 
     @Test
@@ -181,6 +236,7 @@ class CommunityPostServiceTest {
         CommunityComment comment = comment();
         given(communityPostRepository.findById(20L)).willReturn(Optional.of(post));
         given(communityCommentRepository.findById(30L)).willReturn(Optional.of(comment));
+        givenAuthorName(2L, "댓글 작성자");
 
         CommunityCommentResponse response = communityPostService.updateComment(
                 2L,
@@ -190,6 +246,7 @@ class CommunityPostServiceTest {
         );
 
         assertThat(response.content()).isEqualTo("수정한 댓글입니다");
+        assertThat(response.authorName()).isEqualTo("댓글 작성자");
         assertThat(comment.getContent()).isEqualTo("수정한 댓글입니다");
     }
 
@@ -310,6 +367,15 @@ class CommunityPostServiceTest {
                 .content("좋은 후기입니다")
                 .createdAt(java.time.LocalDateTime.now())
                 .build();
+    }
+
+    private void givenAuthorName(Long userId, String name) {
+        given(userRepository.findById(userId)).willReturn(Optional.of(User.builder()
+                .id(userId)
+                .email("user" + userId + "@example.com")
+                .password("password")
+                .name(name)
+                .build()));
     }
 
     private SaveRestaurantRequest restaurantRequest() {
