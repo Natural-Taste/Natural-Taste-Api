@@ -35,7 +35,8 @@ class RestaurantControllerTest {
                         .param("query", "초밥")
                         .param("x", "127.027")
                         .param("y", "37.499"))
-                .andExpect(status().isOk());
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.code").value("KAKAO_SEARCH_FAILED"));
 
         String saveResponse = mockMvc.perform(post("/restaurants/saved")
                         .header("Authorization", "Bearer " + accessToken)
@@ -74,11 +75,31 @@ class RestaurantControllerTest {
                 .andExpect(jsonPath("$.saved").value(true))
                 .andExpect(jsonPath("$.memo").value("다음에는 런치로"));
 
+        mockMvc.perform(patch("/restaurants/saved/{restaurantId}/review", restaurantId)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "rating": 5,
+                                  "tags": "혼밥, 재방문",
+                                  "revisit": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(restaurantId))
+                .andExpect(jsonPath("$.saved").value(true))
+                .andExpect(jsonPath("$.rating").value(5))
+                .andExpect(jsonPath("$.tags").value("혼밥, 재방문"))
+                .andExpect(jsonPath("$.revisit").value(true));
+
         mockMvc.perform(get("/restaurants/saved")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(restaurantId))
-                .andExpect(jsonPath("$[0].memo").value("다음에는 런치로"));
+                .andExpect(jsonPath("$[0].memo").value("다음에는 런치로"))
+                .andExpect(jsonPath("$[0].rating").value(5))
+                .andExpect(jsonPath("$[0].tags").value("혼밥, 재방문"))
+                .andExpect(jsonPath("$[0].revisit").value(true));
 
         mockMvc.perform(delete("/restaurants/saved/{restaurantId}", restaurantId)
                         .header("Authorization", "Bearer " + accessToken))

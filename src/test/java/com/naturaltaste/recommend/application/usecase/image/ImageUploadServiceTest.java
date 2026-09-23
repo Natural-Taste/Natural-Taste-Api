@@ -6,7 +6,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.naturaltaste.recommend.application.common.BusinessException;
+import com.naturaltaste.recommend.application.common.ErrorCode;
 import com.naturaltaste.recommend.application.port.ImageStoragePort;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -50,5 +52,52 @@ class ImageUploadServiceTest {
 
         assertThatThrownBy(() -> imageUploadService.upload(file))
                 .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void uploadRejectsImageContentTypeWithUnsupportedExtension() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "food.gif",
+                "image/gif",
+                "image".getBytes()
+        );
+
+        assertThatThrownBy(() -> imageUploadService.upload(file))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_IMAGE_FILE);
+    }
+
+    @Test
+    void uploadRejectsImageContentTypeWithWrongExtension() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "food.txt",
+                "image/png",
+                "image".getBytes()
+        );
+
+        assertThatThrownBy(() -> imageUploadService.upload(file))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_IMAGE_FILE);
+    }
+
+    @Test
+    void uploadRejectsTooLargeImageFile() {
+        byte[] bytes = new byte[5 * 1024 * 1024 + 1];
+        Arrays.fill(bytes, (byte) 1);
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "food.jpg",
+                "image/jpeg",
+                bytes
+        );
+
+        assertThatThrownBy(() -> imageUploadService.upload(file))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_IMAGE_FILE);
     }
 }

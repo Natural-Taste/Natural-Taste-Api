@@ -92,6 +92,29 @@ public class RestaurantService implements RestaurantUseCase {
         return RestaurantResponse.fromSavedRestaurant(restaurant, updatedSavedRestaurant);
     }
 
+    @Override
+    @Transactional
+    public RestaurantResponse updateSavedRestaurantReview(
+            Long userId,
+            Long restaurantId,
+            UpdateSavedRestaurantReviewRequest request
+    ) {
+        if (request.rating() == null || request.rating() < 1 || request.rating() > 5) {
+            throw new BusinessException(ErrorCode.INVALID_RESTAURANT_REVIEW);
+        }
+
+        SavedRestaurant savedRestaurant = savedRestaurantRepository
+                .findByUserIdAndRestaurantId(userId, restaurantId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESTAURANT_NOT_FOUND));
+        Restaurant restaurant = restaurantRepository.findById(restaurantId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESTAURANT_NOT_FOUND));
+
+        savedRestaurant.updateReview(request.rating(), normalizeTags(request.tags()), request.revisit());
+        SavedRestaurant updatedSavedRestaurant = savedRestaurantRepository.save(savedRestaurant);
+
+        return RestaurantResponse.fromSavedRestaurant(restaurant, updatedSavedRestaurant);
+    }
+
     private Restaurant createRestaurant(SaveRestaurantRequest request) {
         return Restaurant.create(
                 request.provider(),
@@ -117,5 +140,13 @@ public class RestaurantService implements RestaurantUseCase {
                 request.placeUrl()
         );
         return restaurant;
+    }
+
+    private String normalizeTags(String tags) {
+        if (tags == null || tags.isBlank()) {
+            return null;
+        }
+
+        return tags.trim();
     }
 }

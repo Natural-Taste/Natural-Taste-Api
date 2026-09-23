@@ -6,32 +6,44 @@ import com.naturaltaste.recommend.application.port.RestaurantSearchPort;
 import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantSearchResult;
 import java.math.BigDecimal;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
 @Component
 @Primary
+@Slf4j
 public class KakaoLocalSearchPort implements RestaurantSearchPort {
 
     private static final String PROVIDER = "KAKAO";
+    private static final String FOOD_CATEGORY_GROUP_CODE = "FD6";
+    private static final String AUTHORIZATION_PREFIX = "KakaoAK ";
 
     private final RestClient restClient;
     private final String restApiKey;
 
+    @Autowired
     public KakaoLocalSearchPort(@Value("${kakao.rest-api-key:}") String restApiKey) {
-        this.restClient = RestClient.builder()
+        this(RestClient.builder()
                 .baseUrl("https://dapi.kakao.com")
-                .build();
+                .build(), restApiKey);
+    }
+
+    KakaoLocalSearchPort(RestClient restClient, String restApiKey) {
+        this.restClient = restClient;
         this.restApiKey = restApiKey;
     }
 
     @Override
     public List<RestaurantSearchResult> search(String query, BigDecimal longitude, BigDecimal latitude) {
-        if (restApiKey.isBlank()) {
-            return List.of();
+        if (hasInvalidRestApiKey()) {
+            log.warn("Kakao Local API REST key is missing or invalid. Check KAKAO_REST_API_KEY.");
+            throw new BusinessException(ErrorCode.KAKAO_SEARCH_FAILED);
         }
 
         try {
@@ -39,11 +51,11 @@ public class KakaoLocalSearchPort implements RestaurantSearchPort {
                     .uri(uriBuilder -> uriBuilder
                             .path("/v2/local/search/keyword.json")
                             .queryParam("query", query)
-                            .queryParam("category_group_code", "FD6")
+                            .queryParam("category_group_code", FOOD_CATEGORY_GROUP_CODE)
                             .queryParamIfPresent("x", java.util.Optional.ofNullable(longitude))
                             .queryParamIfPresent("y", java.util.Optional.ofNullable(latitude))
                             .build())
-                    .header("Authorization", "KakaoAK " + restApiKey)
+                    .header("Authorization", AUTHORIZATION_PREFIX + restApiKey)
                     .retrieve()
                     .body(KakaoKeywordSearchResponse.class);
 
@@ -54,9 +66,24 @@ public class KakaoLocalSearchPort implements RestaurantSearchPort {
             return response.documents().stream()
                     .map(this::toSearchResult)
                     .toList();
+        } catch (RestClientResponseException exception) {
+            log.warn(
+                    "Kakao Local API request failed. status={}, body={}",
+                    exception.getStatusCode(),
+                    exception.getResponseBodyAsString()
+            );
+            throw new BusinessException(ErrorCode.KAKAO_SEARCH_FAILED);
         } catch (RestClientException exception) {
+            log.warn("Kakao Local API request failed.", exception);
             throw new BusinessException(ErrorCode.KAKAO_SEARCH_FAILED);
         }
+    }
+
+    private boolean hasInvalidRestApiKey() {
+        return restApiKey == null
+                || restApiKey.isBlank()
+                || restApiKey.startsWith(AUTHORIZATION_PREFIX.trim())
+                || restApiKey.chars().anyMatch(Character::isWhitespace);
     }
 
     private RestaurantSearchResult toSearchResult(KakaoPlaceResponse place) {

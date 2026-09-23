@@ -41,6 +41,15 @@ public class SavedRestaurant {
     @Column(name = "memo")
     private String memo;
 
+    @Column(name = "rating")
+    private Integer rating;
+
+    @Column(name = "tags")
+    private String tags;
+
+    @Column(name = "revisit")
+    private Boolean revisit;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -54,5 +63,11 @@ public class SavedRestaurant {
 
     public void updateMemo(String memo) {
         this.memo = memo;
+    }
+
+    public void updateReview(Integer rating, String tags, Boolean revisit) {
+        this.rating = rating;
+        this.tags = tags;
+        this.revisit = revisit;
     }
 }

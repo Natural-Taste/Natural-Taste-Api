@@ -2,6 +2,7 @@ package com.naturaltaste.recommend.application.usecase.community;
 
 import com.naturaltaste.recommend.application.common.BusinessException;
 import com.naturaltaste.recommend.application.common.ErrorCode;
+import com.naturaltaste.recommend.application.usecase.notification.NotificationUseCase;
 import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantResponse;
 import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantUseCase;
 import com.naturaltaste.recommend.application.usecase.restaurant.SaveRestaurantRequest;
@@ -15,6 +16,7 @@ import com.naturaltaste.recommend.domain.restaurant.Restaurant;
 import com.naturaltaste.recommend.domain.restaurant.RestaurantRepository;
 import com.naturaltaste.recommend.domain.user.UserRepository;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,7 @@ public class CommunityPostService implements CommunityPostUseCase {
     private final RestaurantRepository restaurantRepository;
     private final UserRepository userRepository;
     private final RestaurantUseCase restaurantUseCase;
+    private final NotificationUseCase notificationUseCase;
 
     @Override
     @Transactional
@@ -99,11 +102,14 @@ public class CommunityPostService implements CommunityPostUseCase {
     @Transactional
     public CommunityPostResponse toggleRecommendation(Long userId, Long postId) {
         CommunityPost post = findPost(postId);
-        communityRecommendationRepository.findByPostIdAndUserId(postId, userId)
-                .ifPresentOrElse(
-                        communityRecommendationRepository::delete,
-                        () -> communityRecommendationRepository.save(CommunityRecommendation.create(postId, userId))
-                );
+        Optional<CommunityRecommendation> recommendation =
+                communityRecommendationRepository.findByPostIdAndUserId(postId, userId);
+        if (recommendation.isPresent()) {
+            communityRecommendationRepository.delete(recommendation.get());
+        } else {
+            communityRecommendationRepository.save(CommunityRecommendation.create(postId, userId));
+            notificationUseCase.createCommunityRecommendation(post.getAuthorId(), userId, postId);
+        }
 
         return toResponse(post, findRestaurant(post.getRestaurantId()), userId);
     }
@@ -115,12 +121,13 @@ public class CommunityPostService implements CommunityPostUseCase {
             Long postId,
             CreateCommunityCommentRequest request
     ) {
-        findPost(postId);
+        CommunityPost post = findPost(postId);
         CommunityComment comment = communityCommentRepository.save(CommunityComment.create(
                 postId,
                 userId,
                 request.content()
         ));
+        notificationUseCase.createCommunityComment(post.getAuthorId(), userId, postId);
 
         return CommunityCommentResponse.from(comment, findAuthorName(comment.getAuthorId()));
     }

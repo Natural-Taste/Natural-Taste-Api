@@ -4,6 +4,7 @@ import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantRespo
 import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantUseCase;
 import com.naturaltaste.recommend.application.usecase.restaurant.SaveRestaurantRequest;
 import com.naturaltaste.recommend.application.usecase.restaurant.UpdateSavedRestaurantMemoRequest;
+import com.naturaltaste.recommend.application.usecase.restaurant.UpdateSavedRestaurantReviewRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.math.BigDecimal;
@@ -65,6 +66,15 @@ public class RestaurantController {
             @RequestBody UpdateSavedRestaurantMemoRequest request
     ) {
         return restaurantUseCase.updateSavedRestaurantMemo(currentUserId(authentication), restaurantId, request);
+    }
+
+    @PatchMapping("/restaurants/saved/{restaurantId}/review")
+    public RestaurantResponse updateSavedRestaurantReview(
+            Authentication authentication,
+            @PathVariable Long restaurantId,
+            @RequestBody UpdateSavedRestaurantReviewRequest request
+    ) {
+        return restaurantUseCase.updateSavedRestaurantReview(currentUserId(authentication), restaurantId, request);
     }
 
     private Long currentUserId(Authentication authentication) {

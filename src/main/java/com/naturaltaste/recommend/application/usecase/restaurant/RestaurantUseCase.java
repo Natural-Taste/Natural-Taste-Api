@@ -14,4 +14,10 @@ public interface RestaurantUseCase {
     List<RestaurantResponse> findSavedRestaurants(Long userId);
 
     RestaurantResponse updateSavedRestaurantMemo(Long userId, Long restaurantId, UpdateSavedRestaurantMemoRequest request);
+
+    RestaurantResponse updateSavedRestaurantReview(
+            Long userId,
+            Long restaurantId,
+            UpdateSavedRestaurantReviewRequest request
+    );
 }

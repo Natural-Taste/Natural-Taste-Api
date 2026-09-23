@@ -6,6 +6,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.naturaltaste.recommend.application.common.BusinessException;
+import com.naturaltaste.recommend.application.usecase.notification.NotificationUseCase;
 import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantResponse;
 import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantUseCase;
 import com.naturaltaste.recommend.application.usecase.restaurant.SaveRestaurantRequest;
@@ -49,6 +50,9 @@ class CommunityPostServiceTest {
 
     @Mock
     private RestaurantUseCase restaurantUseCase;
+
+    @Mock
+    private NotificationUseCase notificationUseCase;
 
     @InjectMocks
     private CommunityPostService communityPostService;
@@ -150,6 +154,7 @@ class CommunityPostServiceTest {
         assertThat(response.recommendationCount()).isEqualTo(1L);
         assertThat(response.recommended()).isTrue();
         verify(communityRecommendationRepository).save(org.mockito.ArgumentMatchers.any(CommunityRecommendation.class));
+        verify(notificationUseCase).createCommunityRecommendation(1L, 2L, 20L);
     }
 
     @Test
@@ -212,6 +217,7 @@ class CommunityPostServiceTest {
         assertThat(response.content()).isEqualTo("좋은 후기입니다");
         assertThat(response.authorName()).isEqualTo("댓글 작성자");
         verify(communityCommentRepository).save(org.mockito.ArgumentMatchers.any(CommunityComment.class));
+        verify(notificationUseCase).createCommunityComment(1L, 2L, 20L);
     }
 
     @Test

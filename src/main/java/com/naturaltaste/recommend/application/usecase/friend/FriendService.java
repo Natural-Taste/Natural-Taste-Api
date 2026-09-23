@@ -2,6 +2,7 @@ package com.naturaltaste.recommend.application.usecase.friend;
 
 import com.naturaltaste.recommend.application.common.BusinessException;
 import com.naturaltaste.recommend.application.common.ErrorCode;
+import com.naturaltaste.recommend.application.usecase.notification.NotificationUseCase;
 import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantResponse;
 import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantUseCase;
 import com.naturaltaste.recommend.domain.friend.FriendRequest;
@@ -24,6 +25,7 @@ public class FriendService implements FriendUseCase {
     private final FriendRequestRepository friendRequestRepository;
     private final FriendshipRepository friendshipRepository;
     private final RestaurantUseCase restaurantUseCase;
+    private final NotificationUseCase notificationUseCase;
 
     @Override
     @Transactional(readOnly = true)
@@ -55,6 +57,7 @@ public class FriendService implements FriendUseCase {
         FriendRequest savedRequest = friendRequestRepository.save(
                 FriendRequest.create(requester.getId(), receiver.getId())
         );
+        notificationUseCase.createFriendRequest(receiver.getId(), requester.getId(), savedRequest.getId());
         return FriendRequestResponse.from(savedRequest, requester, receiver);
     }
 

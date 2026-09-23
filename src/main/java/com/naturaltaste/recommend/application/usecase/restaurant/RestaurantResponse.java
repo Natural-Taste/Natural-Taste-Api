@@ -16,7 +16,10 @@ public record RestaurantResponse(
         String phone,
         String placeUrl,
         boolean saved,
-        String memo
+        String memo,
+        Integer rating,
+        String tags,
+        Boolean revisit
 ) {
 
     public static RestaurantResponse from(Restaurant restaurant) {
@@ -36,6 +39,9 @@ public record RestaurantResponse(
                 restaurant.getPhone(),
                 restaurant.getPlaceUrl(),
                 saved,
+                null,
+                null,
+                null,
                 null
         );
     }
@@ -53,7 +59,10 @@ public record RestaurantResponse(
                 restaurant.getPhone(),
                 restaurant.getPlaceUrl(),
                 true,
-                savedRestaurant.getMemo()
+                savedRestaurant.getMemo(),
+                savedRestaurant.getRating(),
+                savedRestaurant.getTags(),
+                savedRestaurant.getRevisit()
         );
     }
 
@@ -70,6 +79,9 @@ public record RestaurantResponse(
                 searchResult.phone(),
                 searchResult.placeUrl(),
                 false,
+                null,
+                null,
+                null,
                 null
         );
     }

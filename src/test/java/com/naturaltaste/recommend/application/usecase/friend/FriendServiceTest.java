@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 
 import com.naturaltaste.recommend.application.common.BusinessException;
 import com.naturaltaste.recommend.application.common.ErrorCode;
+import com.naturaltaste.recommend.application.usecase.notification.NotificationUseCase;
 import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantResponse;
 import com.naturaltaste.recommend.application.usecase.restaurant.RestaurantUseCase;
 import com.naturaltaste.recommend.domain.friend.FriendRequest;
@@ -41,6 +42,9 @@ class FriendServiceTest {
 
     @Mock
     private RestaurantUseCase restaurantUseCase;
+
+    @Mock
+    private NotificationUseCase notificationUseCase;
 
     @InjectMocks
     private FriendService friendService;
@@ -115,6 +119,7 @@ class FriendServiceTest {
 
         assertThat(response.requester().id()).isEqualTo(1L);
         verify(friendRequestRepository).save(org.mockito.ArgumentMatchers.any(FriendRequest.class));
+        verify(notificationUseCase).createFriendRequest(2L, 1L, request.getId());
     }
 
     @Test
